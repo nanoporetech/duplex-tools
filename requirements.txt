@@ -1,0 +1,9 @@
+edlib
+fire
+more-itertools
+natsort
+numpy
+pandas
+pathlib
+pyfastx
+tqdm

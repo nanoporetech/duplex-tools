@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 The purpose of this script is to split reads that are likely to be informatic concatamers.
 These reads typically have an imperfect match to two neighbouring adapter sequences found next to each other.
@@ -255,6 +254,3 @@ def split(fastq_dir,
 
 def main():
     fire.Fire(split)
-
-if __name__ == '__main__':
-    main()

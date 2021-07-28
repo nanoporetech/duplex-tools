@@ -69,8 +69,3 @@ def assess(seqkit_stats_nosecondary,
 
 def main():
     fire.Fire(assess)
-
-
-if __name__ == '__main__':
-    main()
-
