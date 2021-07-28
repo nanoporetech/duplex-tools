@@ -18,20 +18,20 @@ $(VENV)/bin/activate:
 
 
 .PHONY: install
-install:
+install: venv
 	${IN_VENV} && pip install -r requirements.txt
 	${IN_VENV} && python setup.py install
 
 
 .PHONY: develop
-develop: install
+develop: venv
 	# this is because the copying of binaries only works for an install, not a develop
 	${IN_VENV} && pip install -r requirements.txt
 	${IN_VENV} && python setup.py develop
 
 
 .PHONY: test
-test: install
+test: venv
 	${IN_VENV} && pip install pytest pytest-cov flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order
 	# TODO: add these exclusions back in after outstanding PRs
 	${IN_VENV} && flake8 read_fillet --statistics --import-order-style google --application-import-names read_fillet
