@@ -1,0 +1,112 @@
+image: $IMAGE
+
+stages:
+    - test
+    - build
+    - deploy
+
+# Install a particular Python and set PYTHON envvar for Makefile 
+.install-pyenv: &install-pyenv |
+    git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install ${PYENV_VERSION}
+    export PYTHON=$(PYENV_VERSION=$PYENV_VERSION pyenv which python)
+
+.preparetest: &preparetest
+    stage: test
+    before_script:
+        - export DEBIAN_FRONTEND=noninteractive
+        - apt-get update -qq
+        - apt-get install -y -qq 
+          gcc make cmake curl wget git sqlite3 libsqlite3-dev
+        - *install-pyenv
+
+
+.minimal-python: &minimal-python
+    before_script:
+        - export DEBIAN_FRONTEND=noninteractive
+        - apt-get update -qq && apt-get install -y -qq
+          python3-all-dev python3-venv
+
+
+# medaka test suite on various Pythons
+.pytest: &pytest
+    <<: *preparetest
+    script:
+        - make test
+
+test-3.6.12:
+    variables:
+        PYENV_VERSION: 3.6.12
+    <<: *pytest
+
+test-3.7.9:
+    variables:
+        PYENV_VERSION: 3.7.9
+    <<: *pytest
+
+test-3.8.7:
+    variables:
+        PYENV_VERSION: 3.8.7
+    <<: *pytest
+
+###
+# Source distribution
+#
+
+build:sdist:
+    stage: build
+    <<: *minimal-python
+    script:
+        - make sdist
+    artifacts:
+        paths:
+            - dist/*.tar.gz
+
+###
+# Deploy stages
+#
+
+# Send all tags to PyPI
+deploy:pypi:
+    stage: deploy
+    <<: *minimal-python
+    script:
+        - make pypi_build/bin/activate
+        - source pypi_build/bin/activate
+        - twine upload dist/*.tar.gz
+    only:
+        - tags
+
+# Send all tags matching vX.Y.Z to github (code and release)
+push-github:
+    stage: deploy
+    before_script:
+        - apt-get update -qq && apt-get install -y -qq
+          git python3-all-dev python3-venv git-lfs
+        - mkdir ~/.ssh/
+        - cp $RESEARCH_BOT_GH_KEY ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+        - echo -e "Host github.com\n\tStrictHostKeyChecking no\n\tHostname ssh.github.com\n\tPort 443\n\n" > ~/.ssh/config
+        - git config --global user.email "research.git@nanoporetech.com"
+        - git config --global user.name "ontresearch"
+    script:
+        # Push master and tag to github
+        - git remote add ont ${CI_REPOSITORY_URL} || true
+        - git remote add github git@github.com:nanoporetech/${CI_PROJECT_NAME}.git || true
+        - git fetch ont dev --tags
+        - git checkout ${CI_COMMIT_TAG}
+        - git branch -D master || echo "No master branch to delete"
+        - git checkout -b master
+        - git push -f github master
+        - git push github ${CI_COMMIT_TAG}
+        # Make a github release page
+        - python3 -m venv release_env --prompt "(release) "
+        - source release_env/bin/activate
+        - pip install pip --upgrade
+        - pip install git+https://github.com/epi2me-labs/github_release.git
+        - github_release ${CI_PROJECT_NAME} ${CI_COMMIT_TAG} CHANGELOG.md ${RESEARCH_BOT_GH_TOKEN} --artifacts dist/*.tar.gz
+    only:
+        - /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/
+    except:
+        - branches
