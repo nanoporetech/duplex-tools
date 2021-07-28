@@ -14,13 +14,13 @@ Read Fillet can be installed from PyPI with:
 
 Read Fillet is run simply with:
 
-    read_fillet <path_to_fastq_pass_directory> --pattern "*.fastq" 
+    read_fillet <fastq_directory> 
 
 To see more options run:
 
     read_fillet --help
 
-For each input fastq file, a file with an additional `_split` suffix will be output into the output directory:
+For each input fastq file found in the input directory, a file with an additional `_split` suffix will be output into the output directory, controlled by the `--output_dir` option. If not `--output_dir` is given then the output files are placed alongside in the input files.
 
 The new `*_split.fastq` will contain two new reads for each read that was split, now with suffix `_1` and `_2`
 Reads which were not split will also be added to the new file, so that `*_split.fastq` can be used as a match for any downstream analysis. For example the output may look like:
