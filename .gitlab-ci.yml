@@ -20,6 +20,7 @@ stages:
         - apt-get update -qq
         - apt-get install -y -qq 
           gcc make cmake curl wget git sqlite3 libsqlite3-dev
+          zlib1g-dev libbz2-dev libreadline-dev libssl-dev libffi-dev
         - *install-pyenv
 
 

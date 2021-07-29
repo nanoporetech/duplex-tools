@@ -38,6 +38,59 @@ Reads which were not split will also be added to the new file, so that `*_split.
     +
     <quality>
 
+### Extra Details
+
+
+The purpose of this script is to split reads that are likely to be informatic
+concatamers.  These reads typically have an imperfect match to two neighbouring
+adapter sequences found next to each other.
+
+A simplified view is the following:
+
+Here is a read, where ">>" represents the adapter sequence and "=" represent
+bases from the organism of interest.  The reverse adapter can typically be
+found in the end of a read, represented as "<<" below
+
+A typical read, with adapters in the ends, and bases of interest in the middle
+
+```
+    >>=====<<
+```
+
+Here is a chimeric read that has not been split in the software.
+
+```
+        A        B
+    >>=====<<>>=====<<
+```
+
+B can either be complementary to A, in which case they form a follow-on pair,
+which formed dsDNA prior to sequencing.  B can also be genomically distant from
+A, in which case it is may also desirable to split this read to avoid chimaeras
+
+This module will look for matches to "<<>>" like below, and split these reads
+out into separate parts.
+
+Before:
+```
+    read_id: 0ae195a2-6993-4a0b-afa8-bb834f4739e3
+
+            A        B
+        >>=====<<>>=====<<
+               ^--^
+```
+
+After:
+```
+    read_id: 0ae195a2-6993-4a0b-afa8-bb834f4739e3_1
+            A
+        >>=====<<
+
+    read_id: 0ae195a2-6993-4a0b-afa8-bb834f4739e3_2
+            B
+        >>=====<<
+```
+
 **Assessment**
 
 An additional assessment program `read_fillet_assess` is available. This requires the addition dependencies: `pomoxis`, `samtools`, and `seqkit`. These are most easily obtained using conda (or mamba as a faster alternative):
