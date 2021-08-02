@@ -76,6 +76,8 @@ def assess(
     txt.loc[
         txt['read_count'] > 2, 'expected_class'] = 'Read_gt-2-supplementary'
 
+    txt = txt.query('expected_class != "overlapping"')
+
     txt['split_class'] = "None"
     txt.loc[txt['Read'].isin(edited_reads), 'split_class'] = 'Read split'
     txt.loc[txt['Read'].isin(unedited_reads), 'split_class'] = 'Read not split'
