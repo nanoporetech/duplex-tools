@@ -64,7 +64,7 @@ def find_mid_adaptor(
         print_id=None):
     """Find adapters in middle of reads."""
     trim = 200
-    seq = seq[trim:-trim]  # remove start and end adaptor
+    seq = seq[trim:-trim or None]  # remove start and end adaptor
     results = [
         edlib.align(
             target, seq, mode="HW", task="path",
