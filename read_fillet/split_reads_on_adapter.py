@@ -121,7 +121,9 @@ def process_file(
         print_alignment=False, print_threshold_delta=0):
     """Run the workflow on a single file."""
     newfastx = fastx.with_name(
-        fastx.stem.split('.')[0] + '_split').with_suffix(fastx.suffixes[0])
+        fastx.name.replace('.fastq',
+                           '').replace('.gz',
+                                       '') + '_split').with_suffix('.fastq.gz')
     if output_dir is not None:
         newfastx = Path(output_dir) / newfastx.name
     if debug:

@@ -35,7 +35,7 @@ stages:
 .pytest: &pytest
     <<: *preparetest
     script:
-        - make test
+        - make lint-n-test
 
 test-3.6.12:
     variables:

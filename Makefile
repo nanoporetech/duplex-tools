@@ -30,12 +30,19 @@ develop: venv
 	${IN_VENV} && python setup.py develop
 
 
-.PHONY: test
-test: venv
-	${IN_VENV} && pip install pytest pytest-cov flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order
+.PHONY: flake8
+flake8: venv
+	${IN_VENV} && pip install flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order
 	# TODO: add these exclusions back in after outstanding PRs
-	${IN_VENV} && flake8 read_fillet --statistics --import-order-style google --application-import-names read_fillet
+	${IN_VENV} && flake8 read_fillet --statistics --import-order-style google --application-import-names read_fillet --ignore=W503
 
+.PHONY: test
+test: develop
+	${IN_VENV} && pip install pytest pytest-cov hypothesis
+	${IN_VENV} && pytest
+
+.PHONY: lint-n-test
+lint-n-test: flake8 test
 
 .PHONY: build_env
 build_env: pypi_build/bin/activate
