@@ -1,5 +1,5 @@
 """Split reads containing internal adapter sequences."""
-
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from concurrent.futures import ProcessPoolExecutor
 import functools
 import gzip
@@ -8,7 +8,6 @@ import pickle
 import sys
 
 import edlib
-import fire
 from natsort import natsorted
 import numpy as np
 from pyfastx import Fastx
@@ -252,6 +251,78 @@ def split(
     print(f'Split {nedited_reads} reads kept {nunedited_reads} reads')
 
 
-def main():
+def argparser():
+    """Create argument parser."""
+    parser = ArgumentParser(
+        "Split basecalls based on adapter sequences.",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        add_help=False)
+
+    parser.add_argument(
+        "fastq_dir",
+        help="The directory to search for fastq/fasta files to split.")
+    parser.add_argument(
+        "output_dir",
+        help="Output directory for fastq.")
+    parser.add_argument(
+        "--pattern", default="*.fastq.gz",
+        help="Pattern used for matching fastq/fasta files.")
+    parser.add_argument(
+        "--threads", default=None, type=int,
+        help=(
+            "Number of worker threads. "
+            "Equal to number of logical CPUs by default."))
+    parser.add_argument(
+        "--type", choices=["Native", "PCR"],
+        help="Sample type.")
+    parser.add_argument(
+        "--n_bases_to_mask_tail", default=mask_size_default_tail, type=int,
+        help=(
+            "Number of bases to mask from the tail adapter "
+            "(number of bases at the end of read)."))
+    parser.add_argument(
+        "--n_bases_to_mask_head", default=mask_size_default_head, type=int,
+        help=(
+            "Number of bases to mask from the head adapter "
+            "(number of bases at the start of read)."))
+    parser.add_argument(
+        "--degenerate_bases", default=mask_size_default_N, type=int,
+        help=(
+            "Count of N's between tail and head adapter "
+            "(defaults to n_bases_to_mask_tail + n_bases_to_mask_head)."))
+    parser.add_argument(
+        "--debug", action="store_true",
+        help="Output additional files helpful for debugging.")
+    parser.add_argument(
+        "--edit_threshold", default=None, type=int,
+        help=(
+            "The threshold at which to split reads. Reads with edit distance "
+            "below this value will be split."))
+    parser.add_argument(
+        "--n_replacement", default=None, type=str,
+        help="Optional sequence to use as replacement of the masked bases.")
+    parser.add_argument(
+        "--print_alignment", action="store_true",
+        help="Pretty-print the alignment at each match.")
+    parser.add_argument(
+        "--print_threshold_delta", default=0, type=int,
+        help="Threshold to print the alignment, relative to edit_threshold.")
+    return parser
+
+
+def main(args):
     """Entry point."""
-    fire.Fire(split)
+    split(
+        args.fastq_dir,
+        args.output_dir,
+        args.type,
+        args.n_bases_to_mask_tail,
+        args.n_bases_to_mask_head,
+        args.degenerate_bases,
+        args.debug,
+        args.edit_threshold,
+        args.n_replacement,
+        args.pattern,
+        args.print_alignment,
+        args.print_threshold_delta,
+        args.threads)

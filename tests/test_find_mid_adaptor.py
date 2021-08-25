@@ -1,4 +1,4 @@
-from read_fillet.split_reads_on_adapter import find_mid_adaptor
+from duplex_tools.split_on_adapter import find_mid_adaptor
 from hypothesis import strategies as st, given, settings
 
 

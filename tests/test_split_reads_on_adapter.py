@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 import pkg_resources
 import shutil
-from read_fillet.split_reads_on_adapter import split
+from duplex_tools.split_on_adapter import split
 
 def test_read_fillet():
     # Given some data

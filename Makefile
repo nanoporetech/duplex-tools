@@ -13,7 +13,7 @@ venv: ${VENV}/bin/activate
 IN_VENV=. ./${VENV}/bin/activate
 
 $(VENV)/bin/activate:
-	test -d $(VENV) || $(PYTHON) -m venv $(VENV) --prompt "read_fillet"
+	test -d $(VENV) || $(PYTHON) -m venv $(VENV) --prompt "duplex_tools"
 	${IN_VENV} && pip install pip --upgrade
 
 
@@ -25,7 +25,6 @@ install: venv
 
 .PHONY: develop
 develop: venv
-	# this is because the copying of binaries only works for an install, not a develop
 	${IN_VENV} && pip install -r requirements.txt
 	${IN_VENV} && python setup.py develop
 
@@ -33,16 +32,18 @@ develop: venv
 .PHONY: flake8
 flake8: venv
 	${IN_VENV} && pip install flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order
-	# TODO: add these exclusions back in after outstanding PRs
-	${IN_VENV} && flake8 read_fillet --statistics --import-order-style google --application-import-names read_fillet --ignore=W503
+	${IN_VENV} && flake8 duplex_tools --statistics --import-order-style google --application-import-names duplex_tools
+
 
 .PHONY: test
 test: develop
 	${IN_VENV} && pip install pytest pytest-cov hypothesis
 	${IN_VENV} && pytest
 
-.PHONY: lint-n-test
-lint-n-test: flake8 test
+
+.PHONY: clean
+clean:
+	rm -rf dist build duplex_tools.egg-info pypi_build venv
 
 .PHONY: build_env
 build_env: pypi_build/bin/activate

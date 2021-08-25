@@ -11,10 +11,10 @@ from setuptools.command.install import install
 import pkg_resources
 
 
-__pkg_name__ = 'read_fillet'
-__dist_name__ = 'read_fillet'
+__pkg_name__ = 'duplex_tools'
+__dist_name__ = 'duplex_tools'
 __author__ = 'ont-research'
-__description__ = 'Splitting of sequence reads by internal adapter sequence search.'
+__description__ = 'Range of tools to support operations on Duplex Sequencing read pairs.'
 
 # Use readme as long description and say its github-flavour markdown
 from os import path
@@ -46,7 +46,7 @@ with open(os.path.join(dir_path, 'requirements.txt')) as fh:
 setup(
     name=__pkg_name__,
     version=__version__,
-    url='https://github.com/epi2me-labs/{}'.format(__pkg_name__),
+    url='https://github.com/nanoporetech/{}'.format(__pkg_name__),
     author=__author__,
     author_email='{}@nanoporetech.com'.format(__author__),
     description=__description__,
@@ -60,8 +60,7 @@ setup(
     zip_safe=True,
     entry_points={
         'console_scripts': [
-            '{0} = {0}.split_reads_on_adapter:main'.format(__pkg_name__),
-            '{0}_assess = {0}.split_reads_on_adapter_assess:main'.format(__pkg_name__)
+            '{0} = {0}:main'.format(__pkg_name__),
         ]
     },
 )

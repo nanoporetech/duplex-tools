@@ -1,8 +1,8 @@
 """Assessment of read_fillet results."""
 
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import pickle
 
-import fire
 import numpy as np
 import pandas as pd
 
@@ -101,6 +101,32 @@ def assess(
     print(1 - len(txt_only_once_twice) / len(txt))
 
 
-def main():
+def argparser():
+    """Create argument parser."""
+    parser = ArgumentParser(
+        (
+            "Assess the results of the split_on_adapter command. "
+            "This tool is not intended for public consumption."),
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        add_help=False)
+    parser.add_argument(
+        "seqkit_stats_nosecondary")
+    parser.add_argument(
+        "edited_reads")
+    parser.add_argument(
+        "unedited_reads")
+    parser.add_argument(
+        "split_multiple_times")
+    parser.add_argument(
+        "--suffix")
+    return parser
+
+
+def main(args):
     """Entry point."""
-    fire.Fire(assess)
+    assess(
+        args.seqkit_stats_nosecondary,
+        args.edited_reads,
+        args.unedited_reads,
+        args.split_multiple_times,
+        args.suffix)

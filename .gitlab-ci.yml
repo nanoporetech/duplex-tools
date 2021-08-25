@@ -35,7 +35,7 @@ stages:
 .pytest: &pytest
     <<: *preparetest
     script:
-        - make lint-n-test
+        - make flake8 test
 
 test-3.6.12:
     variables:
