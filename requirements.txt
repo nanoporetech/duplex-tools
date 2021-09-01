@@ -1,9 +1,10 @@
 edlib
-fire
 more-itertools
 natsort
 numpy
 pandas
+parasail
 pathlib
 pyfastx
+pysam
 tqdm

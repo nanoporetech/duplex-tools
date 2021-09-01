@@ -6,6 +6,8 @@ import pickle
 import numpy as np
 import pandas as pd
 
+import duplex_tools
+
 
 def assess(
         seqkit_stats_nosecondary, edited_reads, unedited_reads,
@@ -108,7 +110,7 @@ def argparser():
             "Assess the results of the split_on_adapter command. "
             "This tool is not intended for public consumption."),
         formatter_class=ArgumentDefaultsHelpFormatter,
-        add_help=False)
+        parents=[duplex_tools._log_level()], add_help=False)
     parser.add_argument(
         "seqkit_stats_nosecondary")
     parser.add_argument(

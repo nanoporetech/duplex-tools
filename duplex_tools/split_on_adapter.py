@@ -13,6 +13,7 @@ import numpy as np
 from pyfastx import Fastx
 from tqdm import tqdm
 
+import duplex_tools
 
 EDIT_THRESHOLDS = {'PCR': 45, 'Native': 9}
 mask_size_default_head = 5
@@ -256,7 +257,7 @@ def argparser():
     parser = ArgumentParser(
         "Split basecalls based on adapter sequences.",
         formatter_class=ArgumentDefaultsHelpFormatter,
-        add_help=False)
+        parents=[duplex_tools._log_level()], add_help=False)
 
     parser.add_argument(
         "fastq_dir",
@@ -290,9 +291,6 @@ def argparser():
         help=(
             "Count of N's between tail and head adapter "
             "(defaults to n_bases_to_mask_tail + n_bases_to_mask_head)."))
-    parser.add_argument(
-        "--debug", action="store_true",
-        help="Output additional files helpful for debugging.")
     parser.add_argument(
         "--edit_threshold", default=None, type=int,
         help=(
