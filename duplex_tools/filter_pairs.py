@@ -34,7 +34,6 @@ def reverse_complement(seq):
 def filter_candidate_pairs_by_aligning(
         read_pairs: str,
         fastq: str,
-        recursive: bool = False,
         bases_to_align: int = 250,
         align_threshold: float = 0.6,
         penalty_open: int = 4,
@@ -48,7 +47,6 @@ def filter_candidate_pairs_by_aligning(
         the leftmost coming first in time.
     :param fastq: The path to a fastq file with _all_ reads, both passing and
         failing.
-    :param recursive: look for fastq files recursively.
     :param bases_to_align: Number of bases to use from end of the first read,
         and from the start of second.
     :param align_threshold: Which alignment threshold to use for passing
@@ -85,7 +83,7 @@ def filter_candidate_pairs_by_aligning(
             fastq_index = pickle.load(fh)
     else:
         fastq_index = read_all_fastq(
-            fastq, pairs, bases_to_align, recursive)
+            fastq, pairs, bases_to_align)
         # dump to pickle
         pkl = Path(read_pairs.parent, "read_segments.pkl")
         with open(pkl, "wb") as fh:
@@ -104,11 +102,11 @@ def filter_candidate_pairs_by_aligning(
     alignment_pairs_filtered = alignment_scores_df.query(
         f"score > {align_threshold}")
     alignment_pairs_filtered[["read_id", "read_id_next"]].to_csv(
-        Path(read_pairs.parent, f"{read_pairs.stem}_filtered.csv"),
+        Path(read_pairs.parent, f"{read_pairs.stem}_filtered.txt"),
         index=False, header=False, sep=" ")
 
 
-def read_all_fastq(fastq, pairs, n_bases, recursive=True):
+def read_all_fastq(fastq, pairs, n_bases):
     """Find an read all necessary data from fastq files."""
     logger = duplex_tools.get_named_logger("ReadFastq")
     first = set(pairs["first"])
@@ -117,7 +115,7 @@ def read_all_fastq(fastq, pairs, n_bases, recursive=True):
     def _get_files():
         for ext in ("fastq", "fastq.gz", "fq", "fq.gz"):
             files = glob.iglob(
-                "{}/**/*.{}".format(fastq, ext), recursive=recursive)
+                "{}/**/*.{}".format(fastq, ext), recursive=True)
             yield from files
 
     results = dict()
@@ -222,9 +220,6 @@ def argparser():
         "fastq",
         help="Directory to search of fastq(.gz) files.")
     parser.add_argument(
-        "--recursive",
-        help="Recursively search for fastq files.")
-    parser.add_argument(
         "--bases_to_align", default=250, type=int,
         help="Number of bases from each read to attempt alignment.")
     parser.add_argument(
@@ -252,7 +247,7 @@ def argparser():
 def main(args):
     """Entry point."""
     filter_candidate_pairs_by_aligning(
-        args.read_pairs, args.fastq, args.recursive,
+        args.read_pairs, args.fastq,
         args.bases_to_align, args.align_threshold,
         args.penalty_open, args.penalty_extend,
         args.score_match, args.score_mismatch)
