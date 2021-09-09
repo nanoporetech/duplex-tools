@@ -1,27 +1,27 @@
 ![Oxford Nanopore Technologies logo](https://github.com/nanoporetech/medaka/raw/master/images/ONT_logo_590x106.png)
 
-# Read Fillet
+# Introduction
 
-Read fillet is a simple utility for splitting Oxford Nanopore Sequencing reads
+`duplex_tools split_on_adapter` is a tool for splitting Oxford Nanopore Sequencing reads
 based on knowledge of adapter sequences. Its primary use case is for splitting
 chimeric reads into their component sub-reads.
 
 
 ## Installation
 
-Read Fillet can be installed from PyPI with:
+`split_on_adapter` is included when performing the installation of duplex-tools from PyPI with:
 
-    pip install read_fillet
+    pip install duplex-tools
 
 ## Usage
 
-Read Fillet is run simply with:
+Run it like this:
 
-    read_fillet <fastq_directory> 
+    duplex_tools split_on_adapter <fastq_directory> 
 
 To see more options run:
 
-    read_fillet --help
+    duplex_tools split_on_adapter --help
 
 For each input fastq file found in the input directory, a file with an
 additional `_split` suffix will be output into the output directory, controlled
