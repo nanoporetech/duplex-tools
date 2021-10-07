@@ -76,7 +76,7 @@ def find_pairs(
     frac_pairs = 100 * ncandidate_pairs * 2 / nstrands
     logger.info(
         f"Found {ncandidate_pairs} pairs within {nstrands} reads. "
-        f"({frac_pairs:.1}% of reads are part of a pair).")
+        f"({frac_pairs:.1f}% of reads are part of a pair).")
     logger.info(f'Writing files into {outdir} directory')
 
     # Write
