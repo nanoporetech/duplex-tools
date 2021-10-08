@@ -2,6 +2,8 @@
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
+import functools
 import glob
 from pathlib import Path
 import pickle
@@ -106,6 +108,20 @@ def filter_candidate_pairs_by_aligning(
         index=False, header=False, sep=" ")
 
 
+def scrape_fastq(file, first, second, n_bases):
+    """Compile data from a fastq file."""
+    logger = duplex_tools.get_named_logger("ReadFastq")
+    logger.debug("Extracting read ends from: {}".format(file))
+    results = dict()
+    for read in pysam.FastxFile(file, persist=False):
+        if read.name in first:
+            results[(read.name, 0)] = str(read.sequence[-n_bases:])
+        if read.name in second:  # a read can be in both
+            results[(read.name, 1)] = reverse_complement(
+                str(read.sequence[:n_bases]))
+    return results
+
+
 def read_all_fastq(fastq, pairs, n_bases):
     """Find an read all necessary data from fastq files."""
     logger = duplex_tools.get_named_logger("ReadFastq")
@@ -120,17 +136,14 @@ def read_all_fastq(fastq, pairs, n_bases):
 
     results = dict()
     files = list(_get_files())
-    for i, file in enumerate(files):
+
+    executor = ProcessPoolExecutor()
+    worker = functools.partial(scrape_fastq, first=first, second=second, n_bases=n_bases)
+    for i, res in enumerate(executor.map(worker, files)):
         if i % 50 == 0:
             logger.info(
                 "Processed {}/{} input fastq files.".format(i, len(files)))
-        logger.debug("Extracting read ends from: {}".format(file))
-        for read in pysam.FastxFile(file, persist=False):
-            if read.name in first:
-                results[(read.name, 0)] = str(read.sequence[-n_bases:])
-            if read.name in second:  # a read can be in both
-                results[(read.name, 1)] = reverse_complement(
-                    str(read.sequence[:n_bases]))
+        results.update(res)
     complete = 100 * len(results) / (2 * len(pairs))
     logger.info(
         "Found {:.1f}% of required reads.".format(complete))

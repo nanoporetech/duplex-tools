@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.2.3]
 ### Changed
-- Corrected documentation for fillet.md
+- Corrected documentation for fillet.md.
+- Enabled multiprocessing for fastq extraction in `filter_pairs`.
 
 ## [v0.2.2]
 ### Changed
