@@ -138,7 +138,8 @@ def read_all_fastq(fastq, pairs, n_bases):
     files = list(_get_files())
 
     executor = ProcessPoolExecutor()
-    worker = functools.partial(scrape_fastq, first=first, second=second, n_bases=n_bases)
+    worker = functools.partial(
+        scrape_fastq, first=first, second=second, n_bases=n_bases)
     for i, res in enumerate(executor.map(worker, files)):
         if i % 50 == 0:
             logger.info(
