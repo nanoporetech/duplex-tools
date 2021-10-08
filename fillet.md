@@ -17,16 +17,14 @@ chimeric reads into their component sub-reads.
 
 Run it like this:
 
-    duplex_tools split_on_adapter <fastq_directory> 
+    duplex_tools split_on_adapter <fastq_directory> <output_directory>
 
 To see more options run:
 
     duplex_tools split_on_adapter --help
 
 For each input fastq file found in the input directory, a file with an
-additional `_split` suffix will be output into the output directory, controlled
-by the `--output_dir` option. If not `--output_dir` is given then the output
-files are placed alongside in the input files.
+additional `_split` suffix will be output into the output directory.
 
 The new `*_split.fastq` will contain two new reads for each read that was
 split, now with suffix `_1` and `_2` Reads which were not split will also be
@@ -52,9 +50,9 @@ downstream analysis. For example the output may look like:
 The purpose of read_fillet is to split reads likely to be concatemers of independent
 reads. Such concatemers may arise from at least two mechanisms:
 
-* chemical chimers arising from artifacts of molecule-biological steps used in the
+* chemical chimeras arising from artifacts of molecule-biological steps used in the
   preparation of sequencing libraries,
-* informatic chimers arising from failures of the algorithms used to process the
+* informatic chimeras arising from failures of the algorithms used to process the
   primary sequencing data.
 
 Regardless of the mechanism that has created chimeric reads, read_fillet
@@ -119,8 +117,8 @@ after the splitting process. Note the `_1` and `_2` in the emitted read UUIDs.
 
 ### Assessment
 
-An additional program `read_fillet_assess` is available to provide
-an assessment of the veracity of the results provided by the main `read_fillet`
+An additional program `assess_split_on_adapter` is available to provide
+an assessment of the veracity of the results provided by the main `duplex_tools split_on_adapter`
 program. The assessment program uses alignment of reads to a reference sequence
 to form knowledge of the true structure of reads (assuming the reference sequence
 to be correct and, for example, not contain structural variants with respect to
@@ -131,9 +129,9 @@ The assessment program requires the addition dependencies: `pomoxis`,
 `samtools`, and `seqkit`. These are most easily obtained using conda (or mamba
 as a faster alternative):
 
-    mamba create --name read_fillet -c bioconda seqkit samtools pomoxis python3.6
-    conda activate read_fillet
-    pip install read_fillet
+    mamba create --name duplex_env -c bioconda seqkit samtools pomoxis python3.6
+    conda activate duplex_env
+    pip install duplex-tools
 
 The program examines supplementary alignments produced by the `minimap2` aligner. The
 alignments are checked to determine their overlap to both the read and the reference
@@ -148,18 +146,18 @@ sequence. Reads are grouped into one of the following classes:
 These categories are not mutually exclusive, if a read belongs to multiple classes the priority
 of labelling is from top to bottom as written above. 
 
-To assess the veracity of the adapter-based `read_fillet` read splitting the assessment
+To assess the veracity of the adapter-based `duplex_tools split_on_adapter` read splitting the assessment
 program counts reads belonging to with- and without-gap classes as follows:
 
 **disjoint_with_gap**
 
-* `read_fillet` split: **true positive**
-* `read_fillet` unsplit: **false negative**
+* `split_on_adapter` split: **true positive**
+* `split_on_adapter` unsplit: **false negative**
 
 **disjoint_without_gap**
 
-* `read_fillet` split: **false positive**
-* `read_fillet` unsplit: **true negative**
+* `split_on_adapter` split: **false positive**
+* `split_on_adapter` unsplit: **true negative**
 
 ### Help
 
@@ -167,7 +165,7 @@ program counts reads belonging to with- and without-gap classes as follows:
 
 © 2021- Oxford Nanopore Technologies Ltd.
 
-`read_fillet` is distributed under the terms of the Mozilla Public License 2.0.
+`duplex_tools` is distributed under the terms of the Mozilla Public License 2.0.
 
 **Research Release**
 
