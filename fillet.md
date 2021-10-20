@@ -15,9 +15,9 @@ chimeric reads into their component sub-reads.
 
 ## Usage
 
-Run it like this:
+Run it like this (sample_type can be Native or PCR):
 
-    duplex_tools split_on_adapter <fastq_directory> <output_directory>
+    duplex_tools split_on_adapter <fastq_directory> <output_directory> <sample_type>
 
 To see more options run:
 

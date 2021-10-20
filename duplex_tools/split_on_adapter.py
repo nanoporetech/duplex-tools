@@ -266,6 +266,9 @@ def argparser():
         "output_dir",
         help="Output directory for fastq.")
     parser.add_argument(
+        "sample_type", choices=["Native", "PCR"],
+        help="Sample type.")
+    parser.add_argument(
         "--pattern", default="*.fastq.gz",
         help="Pattern used for matching fastq/fasta files.")
     parser.add_argument(
@@ -273,9 +276,6 @@ def argparser():
         help=(
             "Number of worker threads. "
             "Equal to number of logical CPUs by default."))
-    parser.add_argument(
-        "--type", choices=["Native", "PCR"],
-        help="Sample type.")
     parser.add_argument(
         "--n_bases_to_mask_tail", default=mask_size_default_tail, type=int,
         help=(
@@ -291,6 +291,10 @@ def argparser():
         help=(
             "Count of N's between tail and head adapter "
             "(defaults to n_bases_to_mask_tail + n_bases_to_mask_head)."))
+    parser.add_argument(
+        "--debug_output", action="store_true",
+        help=(
+            "Output an additional debug file to show the adapter region"))
     parser.add_argument(
         "--edit_threshold", default=None, type=int,
         help=(
@@ -313,11 +317,11 @@ def main(args):
     split(
         args.fastq_dir,
         args.output_dir,
-        args.type,
+        args.sample_type,
         args.n_bases_to_mask_tail,
         args.n_bases_to_mask_head,
         args.degenerate_bases,
-        args.debug,
+        args.debug_output,
         args.edit_threshold,
         args.n_replacement,
         args.pattern,
