@@ -42,6 +42,8 @@ def filter_candidate_pairs_by_aligning(
         penalty_extend: int = 1,
         score_match: int = 2,
         score_mismatch: int = -1,
+        min_length: int = 1,
+        max_length: float = float('inf'),
         loglevel: str = "INFO") -> None:
     """Filter candidate read pairs by quality of alignment.
 
@@ -57,6 +59,10 @@ def filter_candidate_pairs_by_aligning(
     :param penalty_extend: Extend penalty passed to parasail.
     :param score_match: Match score passed to parasail.
     :param score_mismatch: Mismatch score passed to parasail.
+    :param min_length: The minimum length of reads to keep, inclusive.
+        Both template and complement need to be at least this length.
+    :param max_length: The maximum length of reads to keep, inclusive.
+        Both template and complement need to be shorter than this length.
     :param loglevel: Level to log at, for example 'INFO' or 'DEBUG'.
 
     This function takes a path to a file with pairs of candidate followon
@@ -95,7 +101,8 @@ def filter_candidate_pairs_by_aligning(
     # Align all of them
     alignment_scores_df = align_all_pairs(
         align_threshold, fastq_index, bases_to_align, pairs,
-        penalty_extend, penalty_open, score_match, score_mismatch)
+        penalty_extend, penalty_open, score_match, score_mismatch,
+        min_length, max_length)
 
     # Finally, write full summary and filtered pairs
     alignment_scores_df.to_csv(
@@ -159,7 +166,9 @@ def align_all_pairs(
         penalty_extend,
         penalty_open,
         score_match,
-        score_mismatch) -> pd.DataFrame:
+        score_mismatch,
+        min_length,
+        max_length) -> pd.DataFrame:
     """Align read pairs to each other using parasail."""
     counter = defaultdict(int)
     alignment_scores = list()
@@ -195,6 +204,14 @@ def align_all_pairs(
         # TODO: why is this necessary, move to read_all_fastq
         if len(seq1) == 0 or len(seq2) == 0:
             logger.debug(f"Skipped {read_pair}, reads too short.")
+            counter["skipped"] += 1
+            continue
+
+        # Saving time on duplex-calling by just looking at certain lengths:
+        if not (min_length <= len(seq1) <= max_length) or \
+           not (min_length <= len(seq2) <= max_length):
+            logger.debug(f"Skipped {read_pair}, seq1 or seq2 not in "
+                         "requested length range")
             counter["skipped"] += 1
             continue
 
@@ -239,6 +256,12 @@ def argparser():
     parser.add_argument(
         "--loglevel",
         help="Level to log at, for example 'INFO' or 'DEBUG'.")
+    parser.add_argument(
+        "--min_length", default=1, type=int,
+        help="Minimum length of template and complement.")
+    parser.add_argument(
+        "--max_length", default=float('inf'), type=float,
+        help="Maximum length of template and complement.")
     grp = parser.add_argument_group("score options")
     grp.add_argument(
         "--align_threshold", default=0.6, type=float,
@@ -264,4 +287,5 @@ def main(args):
         args.read_pairs, args.fastq,
         args.bases_to_align, args.align_threshold,
         args.penalty_open, args.penalty_extend,
-        args.score_match, args.score_mismatch)
+        args.score_match, args.score_mismatch,
+        args.min_length, args.max_length)
