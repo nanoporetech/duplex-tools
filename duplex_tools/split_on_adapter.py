@@ -111,13 +111,8 @@ def deduplicate_locations_first_key(result):
 
 def process_file(
         fastx, targets, output_dir=None,
-        type="Native",
-        n_bases_to_mask_tail=mask_size_default_tail,
-        n_bases_to_mask_head=mask_size_default_head,
-        degenerate_bases=mask_size_default_N,
-        debug=False,
+        debug_output=False,
         edit_threshold=None,
-        n_replacement=None,
         print_alignment=False, print_threshold_delta=0):
     """Run the workflow on a single file."""
     newfastx = fastx.with_name(
@@ -126,7 +121,7 @@ def process_file(
                                        '') + '_split').with_suffix('.fastq.gz')
     if output_dir is not None:
         newfastx = Path(output_dir) / newfastx.name
-    if debug:
+    if debug_output:
         newfasta = fastx.with_name(
             fastx.stem.split('.')[0] + '_middle').with_suffix('.fasta')
         fasta = open(newfasta, 'w')
@@ -152,7 +147,7 @@ def process_file(
 
                 edited_reads.add(read_id)
                 [(start, end)] = result['locations']
-                if debug:
+                if debug_output:
                     write_match_to_fasta(fasta, seq, start, end, read_id)
                 left_seq, right_seq = seq[:start], seq[end:]
                 left_qual, right_qual = qual[:start], qual[end:]
@@ -163,7 +158,7 @@ def process_file(
             else:
                 outfh.write(f'@{read_id} {comments}\n{seq}\n+\n{qual}\n')
                 unedited_reads.add(read_id)
-    if debug:
+    if debug_output:
         fasta.close()
     return edited_reads, unedited_reads, split_multiple_times
 
@@ -175,10 +170,10 @@ def split(
         n_bases_to_mask_tail=mask_size_default_tail,
         n_bases_to_mask_head=mask_size_default_head,
         degenerate_bases=mask_size_default_N,
-        debug=False,
+        debug_output=False,
         edit_threshold=None,
         n_replacement=None,
-        pattern='*.fastq.gz', print_alignment=False,
+        pattern='*.fastq*', print_alignment=False,
         print_threshold_delta=0,
         threads=None):
     """Split reads.
@@ -193,7 +188,7 @@ def split(
         head adapter (number of bases at the start of read)
     :param degenerate_bases: count of N's between tail and
         head adapter (defaults to n_bases_to_mask_tail + n_bases_to_mask_head)
-    :param debug: Whether to output additional files helpful for debugging.
+    :param debug_output: Output additional files helpful for debugging.
     :param edit_threshold: The threshold at which to split reads. Reads
         with edit distance below this value will be split
     :param n_replacement: Optional sequence to use as replacement
@@ -227,11 +222,9 @@ def split(
     worker = functools.partial(
         process_file,
         targets=targets, output_dir=output_dir,
-        type=type, n_bases_to_mask_tail=n_bases_to_mask_tail,
-        n_bases_to_mask_head=n_bases_to_mask_head,
-        degenerate_bases=degenerate_bases, debug=debug,
+        debug_output=debug_output,
         edit_threshold=edit_threshold,
-        n_replacement=n_replacement, print_alignment=print_alignment,
+        print_alignment=print_alignment,
         print_threshold_delta=print_threshold_delta)
 
     with ProcessPoolExecutor(max_workers=threads) as executor:

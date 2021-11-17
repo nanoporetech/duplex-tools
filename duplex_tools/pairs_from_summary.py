@@ -29,6 +29,7 @@ def find_pairs(
         match_barcodes: bool = False) -> None:
     """Find pairs using metrics stored in a sequencing summary file."""
     logger = duplex_tools.get_named_logger("FindPairs")
+    logger.info(f'Duplex tools version: {duplex_tools.__version__}')
     outdir, output_pairs, output_intermediate = prepare_output_paths(
         outdir, prefix, prepend_seqsummary_stem, sequencing_summary_path)
     logger.info('Loading sequencing summary.')

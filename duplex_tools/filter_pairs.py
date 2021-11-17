@@ -72,6 +72,7 @@ def filter_candidate_pairs_by_aligning(
     beginning of the second read, as shown below:
     """
     logger = duplex_tools.get_named_logger("FiltPairs")
+    logger.info(f'Duplex tools version: {duplex_tools.__version__}')
     logger.info(
         f"Filtering Parameters: "
         f"\n\tnbases_per_strand_to_align={bases_to_align}"
