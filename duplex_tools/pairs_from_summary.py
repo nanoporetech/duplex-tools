@@ -25,8 +25,9 @@ def find_pairs(
         prepend_seqsummary_stem: bool = False,
         max_time_between_reads=20,
         max_seqlen_diff=0.1,
-        verbose: int = 0,
-        match_barcodes: bool = False) -> None:
+        match_barcodes: bool = False,
+        min_qscore: float = None,
+        max_abs_seqlen_diff: int = None) -> None:
     """Find pairs using metrics stored in a sequencing summary file."""
     logger = duplex_tools.get_named_logger("FindPairs")
     logger.info(f'Duplex tools version: {duplex_tools.__version__}')
@@ -42,7 +43,8 @@ def find_pairs(
         "start_time": float,
         "duration": float,
         "channel": int, "mux": int,
-        "sequence_length_template": int}
+        "sequence_length_template": int,
+        "mean_qscore_template": float}
     cols = set(dtype.keys())
 
     def take_column(x):
@@ -69,7 +71,9 @@ def find_pairs(
         seqsummary,
         max_time_between_reads=max_time_between_reads,
         max_seqlen_diff=max_seqlen_diff,
-        match_barcodes=match_barcodes)
+        match_barcodes=match_barcodes,
+        min_qscore=min_qscore,
+        max_abs_seqlen_diff=max_abs_seqlen_diff)
 
     candidate_pairs = seqsummary.query('candidate_followon')
     ncandidate_pairs = len(candidate_pairs)
@@ -119,8 +123,7 @@ def calculate_alignment_metrics(seqsummary) -> pd.DataFrame:
         - seqsummary["alignment_genome_end"])
     seqsummary["bases_between_read_min"] = (
         seqsummary[["bases_between_read_starts", "bases_between_read_ends"]]
-        .abs()
-        .min(axis=1))
+        .abs().min(axis=1))
     return seqsummary
 
 
@@ -128,12 +131,52 @@ def seqsummary_to_tempcompsummary(
         seqsummary: pd.DataFrame,
         max_time_between_reads: float = 20,
         max_seqlen_diff: float = 0.1,
-        match_barcodes: bool = False) -> pd.DataFrame:
+        match_barcodes: bool = False,
+        min_qscore: float = None,
+        max_abs_seqlen_diff: int = None,
+        ) -> pd.DataFrame:
     """Determine read pairs from annotated sequence summary."""
+    logger = duplex_tools.get_named_logger("FindPairs")
+    # Default filtering
     seqsummary["candidate_followon"] = (
         (0 < seqsummary["duration_until_next_start"])
-        & (seqsummary["duration_until_next_start"] < max_time_between_reads)
-        & (seqsummary["fraction_missing_from_longest"] < max_seqlen_diff))
+        & (seqsummary["duration_until_next_start"] < max_time_between_reads))
+    logger.info(f'{seqsummary["candidate_followon"].sum()} pairs after '
+                f'filtering on duration between reads. (max '
+                f'{max_time_between_reads} s)')
+
+    seqsummary["candidate_followon"] = (
+            seqsummary["candidate_followon"]
+            & (seqsummary["fraction_missing_from_longest"] < max_seqlen_diff))
+    logger.info(f'{seqsummary["candidate_followon"].sum()} pairs after '
+                f'filtering on relative sequence length difference. (max '
+                f'{max_seqlen_diff*100}% difference)')
+
+    # Additional filtering
+    if max_abs_seqlen_diff:
+        seqsummary["candidate_followon"] = (
+            seqsummary["candidate_followon"]
+            & (seqsummary["sequence_length_difference"] < max_abs_seqlen_diff)
+        )
+        logger.info(f'{seqsummary["candidate_followon"].sum()} pairs after '
+                    f'absolute sequence length filtering. ('
+                    f'max {max_abs_seqlen_diff} bp)')
+
+    try:
+        if min_qscore:
+            seqsummary["candidate_followon"] = (
+                seqsummary["candidate_followon"]
+                & (seqsummary["mean_qscore_template"] > min_qscore)
+                & (seqsummary["mean_qscore_template_next"] > min_qscore)
+            )
+            logger.info(
+                f'{seqsummary["candidate_followon"].sum()} pairs after '
+                f'qscore filtering. (min qscore = {min_qscore})')
+
+    except KeyError:
+        logger.info("qscore data not available. Skipping the filter of "
+                    f"min_qscore: {min_qscore}")
+
     if match_barcodes:
         first = seqsummary['barcode_arrangement']
         second = seqsummary["barcode_arrangement_next"]
@@ -144,6 +187,7 @@ def seqsummary_to_tempcompsummary(
     templates = seqsummary[seqsummary['candidate_followon']].copy()
     templates['pair_id'] = \
         templates['read_id'] + ' ' + templates['read_id_next']
+    templates.dropna(inplace=True)
     # second reads
     complements = (
         seqsummary
@@ -152,6 +196,11 @@ def seqsummary_to_tempcompsummary(
         .reset_index())
     complements['fraction_missing_from_longest'] = math.nan
     complements['duration_until_next_start'] = math.nan
+    complements['sequence_length_difference'] = math.nan
+    try:
+        complements['mean_qscore_template_next'] = math.nan
+    except KeyError:
+        pass
     complements['pair_id'] = \
         complements['read_id_prev'] + ' ' + complements['read_id']
     # join first and seconds
@@ -160,10 +209,7 @@ def seqsummary_to_tempcompsummary(
             templates.assign(strand='template'),
             complements.assign(strand='complement')]
         ).sort_values(['pair_id', 'start_time'])
-    stats_per_read['fraction_missing_from_longest'] = \
-        stats_per_read['fraction_missing_from_longest'].ffill()
-    stats_per_read['duration_until_next_start'] = \
-        stats_per_read['duration_until_next_start'].ffill()
+
     return stats_per_read.drop(
         columns=[
             'candidate_followon', 'read_id_next', 'read_id_prev',
@@ -183,6 +229,7 @@ def calculate_metrics_for_next_strand(
       Read 2 starts at 20s. Duration until next is 20-(10+15) = 5s
     """
     # ensure table is sorted and annotate next read info
+    logger = duplex_tools.get_named_logger('FindPairs')
     seqsummary.sort_values(
         ["channel", "mux", "start_time"], inplace=True)
     # TODO: this isn't quite right, we need to group by channel and mux
@@ -192,6 +239,18 @@ def calculate_metrics_for_next_strand(
     seqsummary["start_time_next"] = seqsummary["start_time"].shift(-1)
     seqsummary["sequence_length_template_next"] = \
         seqsummary["sequence_length_template"].shift(-1)
+
+    seqsummary["sequence_length_difference"] = (seqsummary[
+        "sequence_length_template_next"] - seqsummary[
+        "sequence_length_template"]).abs()
+    try:
+        seqsummary["mean_qscore_template_next"] = \
+            seqsummary["mean_qscore_template"].shift(-1)
+    except KeyError:
+        logger.debug('qscore not available in the summary. Cannot use for '
+                     'metrics')
+        pass
+
     seqsummary["end_time"] = seqsummary["start_time"] + seqsummary["duration"]
 
     # If there is barcode information (arrangement and scores),
@@ -253,6 +312,16 @@ def argparser():
             "Maximum ratio (a - b) / a, where a and b are the "
             "sequence lengths of a putative pair."))
     parser.add_argument(
+        "--max_abs_seqlen_diff", type=int, default=200,
+        help=(
+            "Maximum sequence length difference between template and "
+            "complement"))
+    parser.add_argument(
+        "--min_qscore", type=float, default=12,
+        help=(
+            "The minimum simplex qscore required from both template and "
+            "complement"))
+    parser.add_argument(
         "--verbose", action="store_true",
         help="Logging level")
     parser.add_argument(
@@ -271,5 +340,6 @@ def main(args):
         prepend_seqsummary_stem=args.prepend_seqsummary_stem,
         max_time_between_reads=args.max_time_between_reads,
         max_seqlen_diff=args.max_seqlen_diff,
-        verbose=args.verbose,
-        match_barcodes=args.match_barcodes)
+        match_barcodes=args.match_barcodes,
+        min_qscore=args.min_qscore,
+        max_abs_seqlen_diff=args.max_abs_seqlen_diff)

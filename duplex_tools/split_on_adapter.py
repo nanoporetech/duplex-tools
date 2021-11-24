@@ -262,7 +262,7 @@ def argparser():
         "sample_type", choices=["Native", "PCR"],
         help="Sample type.")
     parser.add_argument(
-        "--pattern", default="*.fastq.gz",
+        "--pattern", default="*.fastq*",
         help="Pattern used for matching fastq/fasta files.")
     parser.add_argument(
         "--threads", default=None, type=int,
