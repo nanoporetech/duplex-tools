@@ -8,6 +8,7 @@ import pickle
 import sys
 
 import edlib
+from more_itertools import pairwise
 from natsort import natsorted
 import numpy as np
 from pyfastx import Fastx
@@ -113,7 +114,9 @@ def process_file(
         fastx, targets, output_dir=None,
         debug_output=False,
         edit_threshold=None,
-        print_alignment=False, print_threshold_delta=0):
+        print_alignment=False,
+        print_threshold_delta=0,
+        allow_multiple_splits=False):
     """Run the workflow on a single file."""
     newfastx = fastx.with_name(
         fastx.name.replace('.fastq',
@@ -122,7 +125,7 @@ def process_file(
     if output_dir is not None:
         newfastx = Path(output_dir) / newfastx.name
     if debug_output:
-        newfasta = fastx.with_name(
+        newfasta = Path(output_dir) / Path(
             fastx.stem.split('.')[0] + '_middle').with_suffix('.fasta')
         fasta = open(newfasta, 'w')
 
@@ -140,21 +143,35 @@ def process_file(
 
             if result['editDistance'] < edit_threshold:
                 result = deduplicate_locations_first_key(result)
-                if len(result['locations']) > 1:
+                if not allow_multiple_splits and len(result['locations']) > 1:
                     outfh.write(f'@{read_id} {comments}\n{seq}\n+\n{qual}\n')
                     split_multiple_times.add(read_id)
                     continue
-
-                edited_reads.add(read_id)
-                [(start, end)] = result['locations']
-                if debug_output:
-                    write_match_to_fasta(fasta, seq, start, end, read_id)
-                left_seq, right_seq = seq[:start], seq[end:]
-                left_qual, right_qual = qual[:start], qual[end:]
-                outfh.write(
-                    f'@{read_id}_1 {comments}\n{left_seq}\n+\n{left_qual}\n')
-                outfh.write(
-                    f'@{read_id}_2 {comments}\n{right_seq}\n+\n{right_qual}\n')
+                else:
+                    hits = []
+                    edited_reads.add(read_id)
+                    for left_hit, right_hit in pairwise(
+                            [(0, 0), *result['locations'], (len(seq),
+                                                            len(seq))]):
+                        hits.append([left_hit[1], right_hit[0]])
+                    for idx, (start, end) in enumerate(hits, start=1):
+                        if debug_output:
+                            write_match_to_fasta(fasta,
+                                                 seq,
+                                                 start,
+                                                 end,
+                                                 read_id)
+                        # This edge case can happen and results in empty
+                        # sequence
+                        if end <= start:
+                            continue
+                        subseq = seq[start:end]
+                        subqual = qual[start:end]
+                        h = (f'@{read_id}_{idx} {comments} {start}->{end}\n'
+                             f'{subseq}\n'
+                             f'+\n'
+                             f'{subqual}\n')
+                        outfh.write(h)
             else:
                 outfh.write(f'@{read_id} {comments}\n{seq}\n+\n{qual}\n')
                 unedited_reads.add(read_id)
@@ -175,7 +192,8 @@ def split(
         n_replacement=None,
         pattern='*.fastq*', print_alignment=False,
         print_threshold_delta=0,
-        threads=None):
+        threads=None,
+        allow_multiple_splits=False):
     """Split reads.
 
     :param fastq_dir: The directory from which to search for
@@ -199,6 +217,7 @@ def split(
     :param print_threshold_delta: The threshold to print the
         alignment at, relative to edit_threshold
     :param threads: number of worker threads.
+    :param allow_multiple_splits: Allow reads to be split more than once
     """
     fastxs = natsorted(list(Path(fastq_dir).rglob(pattern)), key=str)
     if output_dir is not None:
@@ -225,7 +244,8 @@ def split(
         debug_output=debug_output,
         edit_threshold=edit_threshold,
         print_alignment=print_alignment,
-        print_threshold_delta=print_threshold_delta)
+        print_threshold_delta=print_threshold_delta,
+        allow_multiple_splits=allow_multiple_splits)
 
     with ProcessPoolExecutor(max_workers=threads) as executor:
         results = executor.map(worker, fastxs)
@@ -234,12 +254,13 @@ def split(
             unedited_reads.update(unedited)
             split_multiple_times.update(multi)
 
-    with open('edited.pkl', 'wb') as handle:
+    with open(Path(output, 'edited.pkl'), 'wb') as handle:
         pickle.dump(edited_reads, handle)
-    with open('unedited.pkl', 'wb') as handle:
+    with open(Path(output, 'unedited.pkl'), 'wb') as handle:
         pickle.dump(unedited_reads, handle)
-    with open('split_multiple_times.pkl', 'wb') as handle:
-        pickle.dump(split_multiple_times, handle)
+    if not allow_multiple_splits:
+        with open(Path(output, 'split_multiple_times.pkl'), 'wb') as handle:
+            pickle.dump(split_multiple_times, handle)
     nedited_reads = len(edited_reads)
     nunedited_reads = len(unedited_reads)
     print(f'Split {nedited_reads} reads kept {nunedited_reads} reads')
@@ -302,6 +323,10 @@ def argparser():
     parser.add_argument(
         "--print_threshold_delta", default=0, type=int,
         help="Threshold to print the alignment, relative to edit_threshold.")
+    parser.add_argument(
+        "--allow_multiple_splits", action="store_true",
+        help="Whether to split reads into more than 2 new reads if there"
+             " are multiple hits")
     return parser
 
 
@@ -320,4 +345,5 @@ def main(args):
         args.pattern,
         args.print_alignment,
         args.print_threshold_delta,
-        args.threads)
+        args.threads,
+        args.allow_multiple_splits)
