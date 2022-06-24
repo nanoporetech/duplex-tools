@@ -62,10 +62,9 @@ def build_targets(
 
 def find_mid_adaptor(
         seq, targets, print_alignment=False, print_threshold=10,
-        print_id=None):
+        print_id=None, trim_start=200, trim_end=200):
     """Find adapters in middle of reads."""
-    trim = 200
-    seq = seq[trim:-trim or None]  # remove start and end adaptor
+    seq = seq[trim_start:-trim_end or None]  # remove start and end adaptor
     results = [
         edlib.align(
             target, seq, mode="HW", task="path",
@@ -86,7 +85,7 @@ def find_mid_adaptor(
     res = results[i]
     if res['cigar'] is not None:
         res['locations'] = [
-            (x + trim, y + trim)
+            (x + trim_start, y + trim_start)
             for (x, y) in res['locations']]
     return res
 
@@ -116,7 +115,10 @@ def process_file(
         edit_threshold=None,
         print_alignment=False,
         print_threshold_delta=0,
-        allow_multiple_splits=False):
+        allow_multiple_splits=False,
+        trim_start=200,
+        trim_end=200
+        ):
     """Run the workflow on a single file."""
     newfastx = fastx.with_name(
         fastx.name.replace('.fastq',
@@ -128,24 +130,29 @@ def process_file(
         newfasta = Path(output_dir) / Path(
             fastx.stem.split('.')[0] + '_middle').with_suffix('.fasta')
         fasta = open(newfasta, 'w')
-
     edited_reads = set()
     unedited_reads = set()
     split_multiple_times = set()
+
+    nwritten = 0
     with gzip.open(newfastx, mode='wt', compresslevel=1) as outfh:
+
         for read_id, seq, qual, comments in \
                 tqdm(Fastx(str(fastx)), leave=False):
             result = find_mid_adaptor(
                 seq, targets,
                 print_alignment=print_alignment,
                 print_threshold=edit_threshold + print_threshold_delta,
-                print_id=read_id)
+                print_id=read_id,
+                trim_start=trim_start,
+                trim_end=trim_end)
 
             if result['editDistance'] < edit_threshold:
                 result = deduplicate_locations_first_key(result)
                 if not allow_multiple_splits and len(result['locations']) > 1:
                     outfh.write(f'@{read_id} {comments}\n{seq}\n+\n{qual}\n')
                     split_multiple_times.add(read_id)
+                    nwritten += 1
                     continue
                 else:
                     hits = []
@@ -172,12 +179,13 @@ def process_file(
                              f'+\n'
                              f'{subqual}\n')
                         outfh.write(h)
+                        nwritten += 1
             else:
                 outfh.write(f'@{read_id} {comments}\n{seq}\n+\n{qual}\n')
                 unedited_reads.add(read_id)
     if debug_output:
         fasta.close()
-    return edited_reads, unedited_reads, split_multiple_times
+    return edited_reads, unedited_reads, split_multiple_times, nwritten
 
 
 def split(
@@ -193,7 +201,10 @@ def split(
         pattern='*.fastq*', print_alignment=False,
         print_threshold_delta=0,
         threads=None,
-        allow_multiple_splits=False):
+        allow_multiple_splits=False,
+        trim_start=200,
+        trim_end=200,
+        ):
     """Split reads.
 
     :param fastq_dir: The directory from which to search for
@@ -218,7 +229,12 @@ def split(
         alignment at, relative to edit_threshold
     :param threads: number of worker threads.
     :param allow_multiple_splits: Allow reads to be split more than once
+    :param trim_start: How many bases to trim (mask) from the
+                       beginning of the strand
+    :param trim_end: How many bases to trim (mask) from the end of the strand
     """
+    logger = duplex_tools.get_named_logger("SplitOnAdapters")
+    logger.info(f'Duplex tools version: {duplex_tools.__version__}')
     fastxs = natsorted(list(Path(fastq_dir).rglob(pattern)), key=str)
     if output_dir is not None:
         output = Path(output_dir)
@@ -245,14 +261,19 @@ def split(
         edit_threshold=edit_threshold,
         print_alignment=print_alignment,
         print_threshold_delta=print_threshold_delta,
-        allow_multiple_splits=allow_multiple_splits)
+        allow_multiple_splits=allow_multiple_splits,
+        trim_start=trim_start,
+        trim_end=trim_end,
+    )
 
     with ProcessPoolExecutor(max_workers=threads) as executor:
         results = executor.map(worker, fastxs)
-        for edited, unedited, multi in tqdm(results):
+        total_written = 0
+        for edited, unedited, multi, nwritten in results:
             edited_reads.update(edited)
             unedited_reads.update(unedited)
             split_multiple_times.update(multi)
+            total_written += nwritten
 
     with open(Path(output, 'edited.pkl'), 'wb') as handle:
         pickle.dump(edited_reads, handle)
@@ -263,7 +284,14 @@ def split(
             pickle.dump(split_multiple_times, handle)
     nedited_reads = len(edited_reads)
     nunedited_reads = len(unedited_reads)
-    print(f'Split {nedited_reads} reads kept {nunedited_reads} reads')
+    n_multisplit = len(split_multiple_times)
+    logger.info(f'Split {nedited_reads} reads\n'
+                f'Kept {nunedited_reads} reads')
+    logger.info(f'Wrote a total of {total_written} reads')
+    if not allow_multiple_splits:
+        logger.info(f'{n_multisplit} reads contained multiple'
+                    f' adapters but we re written out as single reads '
+                    f'(to split these, set --allow-multiple-splits')
 
 
 def argparser():
@@ -273,6 +301,7 @@ def argparser():
         formatter_class=ArgumentDefaultsHelpFormatter,
         parents=[duplex_tools._log_level()], add_help=False)
 
+    default = ' (default: %(default)s)'
     parser.add_argument(
         "fastq_dir",
         help="The directory to search for fastq/fasta files to split.")
@@ -284,7 +313,7 @@ def argparser():
         help="Sample type.")
     parser.add_argument(
         "--pattern", default="*.fastq*",
-        help="Pattern used for matching fastq/fasta files.")
+        help="Pattern used for matching fastq/fasta files." + default)
     parser.add_argument(
         "--threads", default=None, type=int,
         help=(
@@ -294,12 +323,12 @@ def argparser():
         "--n_bases_to_mask_tail", default=mask_size_default_tail, type=int,
         help=(
             "Number of bases to mask from the tail adapter "
-            "(number of bases at the end of read)."))
+            "(number of bases at the end of read)." + default))
     parser.add_argument(
         "--n_bases_to_mask_head", default=mask_size_default_head, type=int,
         help=(
             "Number of bases to mask from the head adapter "
-            "(number of bases at the start of read)."))
+            "(number of bases at the start of read)." + default))
     parser.add_argument(
         "--degenerate_bases", default=mask_size_default_N, type=int,
         help=(
@@ -322,11 +351,20 @@ def argparser():
         help="Pretty-print the alignment at each match.")
     parser.add_argument(
         "--print_threshold_delta", default=0, type=int,
-        help="Threshold to print the alignment, relative to edit_threshold.")
+        help="Threshold to print the alignment, "
+             "relative to edit_threshold." + default)
     parser.add_argument(
         "--allow_multiple_splits", action="store_true",
         help="Whether to split reads into more than 2 new reads if there"
              " are multiple hits")
+    parser.add_argument(
+        "--trim_start", default=200, type=int,
+        help="How many bases to trim (mask) "
+             "from the beginning of the strand" + default)
+    parser.add_argument(
+        "--trim_end", default=200, type=int, dest='m',
+        help="How many bases to trim (mask) "
+             "from the end of the strand" + default)
     return parser
 
 

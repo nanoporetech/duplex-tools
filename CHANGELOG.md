@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.10]
+### Added
+- Flags `--trim_start` and `--trim_end` for split_on_adapter (https://github.com/nanoporetech/duplex-tools/issues/13)
+
 ## [v0.2.9]
 ### Added
 - Flag to allow splitting multiple times for reads with multiple adapters

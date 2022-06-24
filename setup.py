@@ -56,7 +56,9 @@ setup(
     tests_require=[].extend(install_requires),
     # don't include any testing subpackages in dist
     packages=find_packages(exclude=['*.test', '*.test.*', 'test.*', 'test']),
-    package_data={'read_fillet': ['tests/data/fastq_200-th-200/200bases-tailhead-200bases.fastq']},
+    package_data={'read_fillet':
+                      ['tests/data/fastq_200-th-200/200bases-tailhead-200bases.fastq',
+                       'tests/data/fastq_200-th-200-fh-200/200bases-tailhead-200bases-tailhead-200bases.fastq']},
     zip_safe=True,
     entry_points={
         'console_scripts': [
