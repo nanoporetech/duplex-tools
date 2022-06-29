@@ -362,7 +362,7 @@ def argparser():
         help="How many bases to trim (mask) "
              "from the beginning of the strand" + default)
     parser.add_argument(
-        "--trim_end", default=200, type=int, dest='m',
+        "--trim_end", default=200, type=int,
         help="How many bases to trim (mask) "
              "from the end of the strand" + default)
     return parser
@@ -384,4 +384,7 @@ def main(args):
         args.print_alignment,
         args.print_threshold_delta,
         args.threads,
-        args.allow_multiple_splits)
+        args.allow_multiple_splits,
+        args.trim_start,
+        args.trim_end,
+        )
