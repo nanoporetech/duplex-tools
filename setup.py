@@ -46,7 +46,7 @@ with open(os.path.join(dir_path, 'requirements.txt')) as fh:
 setup(
     name=__pkg_name__,
     version=__version__,
-    url='https://github.com/nanoporetech/{}'.format(__pkg_name__),
+    url='https://github.com/nanoporetech/{}'.format(__pkg_name__.replace('_', '-')),
     author=__author__,
     author_email='{}@nanoporetech.com'.format(__author__),
     description=__description__,
