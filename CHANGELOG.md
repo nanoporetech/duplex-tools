@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.12]
+### Fixed
+- Update defaults in pairs_from_summary to `--min_qscore 7 --max_abs_seqlen_diff 1000`
+
 ## [v0.2.11]
 ### Fixed
 - Passed --trim_start and --trim_end from cli to main function for split_on_adapter

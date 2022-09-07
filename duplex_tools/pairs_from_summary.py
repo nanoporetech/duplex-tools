@@ -312,12 +312,12 @@ def argparser():
             "Maximum ratio (a - b) / a, where a and b are the "
             "sequence lengths of a putative pair."))
     parser.add_argument(
-        "--max_abs_seqlen_diff", type=int, default=200,
+        "--max_abs_seqlen_diff", type=int, default=1000,
         help=(
             "Maximum sequence length difference between template and "
             "complement"))
     parser.add_argument(
-        "--min_qscore", type=float, default=12,
+        "--min_qscore", type=float, default=7,
         help=(
             "The minimum simplex qscore required from both template and "
             "complement"))
