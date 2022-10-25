@@ -44,7 +44,9 @@ def filter_candidate_pairs_by_aligning(
         score_mismatch: int = -1,
         min_length: int = 1,
         max_length: float = float('inf'),
-        loglevel: str = "INFO") -> None:
+        threads: int = None,
+        loglevel: str = "INFO",
+        ) -> None:
     """Filter candidate read pairs by quality of alignment.
 
     :param read_pairs: Path to file with two space-separated read-ids per row,
@@ -63,7 +65,9 @@ def filter_candidate_pairs_by_aligning(
         Both template and complement need to be at least this length.
     :param max_length: The maximum length of reads to keep, inclusive.
         Both template and complement need to be shorter than this length.
+    :param threads: number of worker threads.
     :param loglevel: Level to log at, for example 'INFO' or 'DEBUG'.
+
 
     This function takes a path to a file with pairs of candidate followon
     read-ids and require a fastq that contains the same read-ids.
@@ -92,7 +96,7 @@ def filter_candidate_pairs_by_aligning(
             fastq_index = pickle.load(fh)
     else:
         fastq_index = read_all_fastq(
-            fastq, pairs, bases_to_align)
+            fastq, pairs, bases_to_align, threads=threads)
         # dump to pickle
         pkl = Path(read_pairs.parent, "read_segments.pkl")
         with open(pkl, "wb") as fh:
@@ -130,7 +134,7 @@ def scrape_fastq(file, first, second, n_bases):
     return results
 
 
-def read_all_fastq(fastq, pairs, n_bases):
+def read_all_fastq(fastq, pairs, n_bases, threads=None):
     """Find an read all necessary data from fastq files."""
     logger = duplex_tools.get_named_logger("ReadFastq")
     first = set(pairs["first"])
@@ -145,7 +149,7 @@ def read_all_fastq(fastq, pairs, n_bases):
     results = dict()
     files = list(_get_files())
 
-    executor = ProcessPoolExecutor()
+    executor = ProcessPoolExecutor(max_workers=threads)
     worker = functools.partial(
         scrape_fastq, first=first, second=second, n_bases=n_bases)
     for i, res in enumerate(executor.map(worker, files)):
@@ -279,6 +283,11 @@ def argparser():
     grp.add_argument(
         "--score_mismatch", default=-1, type=int,
         help="Mismatch score passed to parasail.")
+    grp.add_argument(
+        "--threads", default=None, type=int,
+        help=("Number of worker threads. "
+              "Equal to number of logical CPUs by default."))
+
     return parser
 
 
@@ -289,4 +298,5 @@ def main(args):
         args.bases_to_align, args.align_threshold,
         args.penalty_open, args.penalty_extend,
         args.score_match, args.score_mismatch,
-        args.min_length, args.max_length)
+        args.min_length, args.max_length,
+        args.threads)

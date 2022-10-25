@@ -67,7 +67,7 @@ For example,
         -i <MinKNOW directory> \
         -r -s duplex_calls \
         -x 'cuda:0' -c q20-fixed-2.0-ft-10M.cfg \
-        --chunks_per_runner 16 \
+        --chunks_per_runner 416 \
         --duplex_pairing_mode from_pair_list \
         --duplex_pairing_file pair_ids_filtered.txt
 
