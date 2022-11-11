@@ -139,7 +139,7 @@ def seqsummary_to_tempcompsummary(
     logger = duplex_tools.get_named_logger("FindPairs")
     # Default filtering
     seqsummary["candidate_followon"] = (
-        (0 <= seqsummary["duration_until_next_start"])
+        (-0.01 <= seqsummary["duration_until_next_start"])
         & (seqsummary["duration_until_next_start"] < max_time_between_reads))
     logger.info(f'{seqsummary["candidate_followon"].sum()} pairs after '
                 f'filtering on duration between reads. (max '

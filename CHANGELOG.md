@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.15]
+### Fixed
+- Bug where template/complement pairs with small negative time between them would not be chosen (rounding error).
+### Added
+- Option to set --no_end_penalties in filter_pairs. This option favours partial matches and avoids unbounded negative pairing scores
+
 ## [v0.2.14]
 ### Fixed
 - Bug where template/complement pairs with no time between them would not be chosen

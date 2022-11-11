@@ -45,6 +45,7 @@ def filter_candidate_pairs_by_aligning(
         min_length: int = 1,
         max_length: float = float('inf'),
         threads: int = None,
+        no_end_penalties: bool = False,
         loglevel: str = "INFO",
         ) -> None:
     """Filter candidate read pairs by quality of alignment.
@@ -66,6 +67,8 @@ def filter_candidate_pairs_by_aligning(
     :param max_length: The maximum length of reads to keep, inclusive.
         Both template and complement need to be shorter than this length.
     :param threads: number of worker threads.
+    :param no_end_penalties: Do not penalise ends of complement alignment.
+        Favours truncated alignments
     :param loglevel: Level to log at, for example 'INFO' or 'DEBUG'.
 
 
@@ -107,7 +110,7 @@ def filter_candidate_pairs_by_aligning(
     alignment_scores_df = align_all_pairs(
         align_threshold, fastq_index, bases_to_align, pairs,
         penalty_extend, penalty_open, score_match, score_mismatch,
-        min_length, max_length)
+        min_length, max_length, no_end_penalties)
 
     # Finally, write full summary and filtered pairs
     alignment_scores_df.to_csv(
@@ -173,7 +176,8 @@ def align_all_pairs(
         score_match,
         score_mismatch,
         min_length,
-        max_length) -> pd.DataFrame:
+        max_length,
+        no_end_penalties) -> pd.DataFrame:
     """Align read pairs to each other using parasail."""
     counter = defaultdict(int)
     alignment_scores = list()
@@ -181,6 +185,8 @@ def align_all_pairs(
     logger = duplex_tools.get_named_logger("AlignPairs")
     logger.info(f"Aligning {npairs} pairs")
     score_matrix = parasail.matrix_create("ACGT", score_match, score_mismatch)
+    if no_end_penalties:
+        logger.info("Using --no_end_penalties")
     for idx, read_pair in enumerate(pairs.itertuples(), 1):
         if idx % 50000 == 0:
             done = 100 * idx / npairs
@@ -221,7 +227,11 @@ def align_all_pairs(
             continue
 
         # Run a semi-global alignment (sg) with zero end-penalty for seq2 (dx)
-        result = parasail.sg_dx_trace_scan_16(
+        if no_end_penalties:
+            aligner = parasail.sg_trace_scan_16
+        else:
+            aligner = parasail.sg_dx_trace_scan_16
+        result = aligner(
             seq1, seq2, penalty_open, penalty_extend, score_matrix)
 
         # scale score to read length
@@ -287,7 +297,10 @@ def argparser():
         "--threads", default=None, type=int,
         help=("Number of worker threads. "
               "Equal to number of logical CPUs by default."))
-
+    grp.add_argument(
+        "--no_end_penalties", action="store_true",
+        help="Do no use end penalties for alignment. Allows truncated "
+             "complement")
     return parser
 
 
@@ -299,4 +312,4 @@ def main(args):
         args.penalty_open, args.penalty_extend,
         args.score_match, args.score_mismatch,
         args.min_length, args.max_length,
-        args.threads)
+        args.threads, args.no_end_penalties)
