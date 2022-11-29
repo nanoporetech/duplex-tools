@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.16]
+### Added
+- Ability to use an unmapped bam (output from dorado) as input to pairs_from_summary
+- Ability to use an unmapped bam (output from dorado) as input to filter_pairs
+- Convenience script (`dorado pair unmapped.bam`) to call both pairs_from_summary and filter_pairs on a bam
+  - usage: dorado pair unmapped.bam
+
 ## [v0.2.15]
 ### Fixed
 - Bug where template/complement pairs with small negative time between them would not be chosen (rounding error).

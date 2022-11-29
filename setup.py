@@ -58,7 +58,14 @@ setup(
     packages=find_packages(exclude=['*.test', '*.test.*', 'test.*', 'test']),
     package_data={'read_fillet':
                       ['tests/data/fastq_200-th-200/200bases-tailhead-200bases.fastq',
-                       'tests/data/fastq_200-th-200-fh-200/200bases-tailhead-200bases-tailhead-200bases.fastq']},
+                       'tests/data/fastq_200-th-200-fh-200/200bases-tailhead'
+                       '-200bases-tailhead-200bases.fastq'],
+                  'duplex_tools':
+                      ['tests/data/summaries_for_pairing/dorado_unmapped.bam',
+                       'tests/data/summaries_for_pairing/dorado_unmapped.bam.bai',
+                       'tests/data/summaries_for_pairing/seqsummary.txt',
+                       
+                       ]},
     zip_safe=True,
     entry_points={
         'console_scripts': [

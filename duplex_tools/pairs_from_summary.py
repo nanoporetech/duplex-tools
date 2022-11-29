@@ -14,6 +14,8 @@ import math
 from pathlib import Path
 
 import pandas as pd
+import pysam
+from tqdm import tqdm
 
 import duplex_tools
 
@@ -33,29 +35,51 @@ def find_pairs(
     logger.info(f'Duplex tools version: {duplex_tools.__version__}')
     outdir, output_pairs, output_intermediate = prepare_output_paths(
         outdir, prefix, prepend_seqsummary_stem, sequencing_summary_path)
-    logger.info('Loading sequencing summary.')
-    dtype = {
-        "read_id": str,
-        "alignment_genome": str,
-        "alignment_genome_start": pd.Int64Dtype(),
-        "alignment_genome_end": pd.Int64Dtype(),
-        "barcode_arrangement": str,
-        "start_time": float,
-        "duration": float,
-        "channel": int, "mux": int,
-        "sequence_length_template": int,
-        "mean_qscore_template": float}
-    cols = set(dtype.keys())
+    if Path(sequencing_summary_path).suffix == '.bam':
+        logger.info('Creating seqsummary from bam')
+        bamfile = pysam.AlignmentFile(sequencing_summary_path,
+                                      check_sq=False)  # Allow uBAM
+        records = []
+        for read in tqdm(bamfile.fetch(until_eof=True)):  # Allow uBAM
+            records.append({'read_id': read.qname,
+                            'duration': read.get_tag('du'),
+                            'start_time': read.get_tag('st'),
+                            'channel': read.get_tag('ch'),
+                            'mux': read.get_tag('mx'),
+                            'sequence_length_template': read.get_tag('ns'),
+                            'mean_qscore_template': read.get_tag('qs')
+                            }
+                           )
+        seqsummary = pd.DataFrame(records)
+        seqsummary['start_time'] = (
+                pd.to_datetime(seqsummary['start_time']) -
+                pd.to_datetime(seqsummary['start_time']).min()
+                ).dt.total_seconds().astype(float)
+    else:
+        logger.info('Loading sequencing summary.')
+        dtype = {
+            "read_id": str,
+            "alignment_genome": str,
+            "alignment_genome_start": pd.Int64Dtype(),
+            "alignment_genome_end": pd.Int64Dtype(),
+            "barcode_arrangement": str,
+            "start_time": float,
+            "duration": float,
+            "channel": int, "mux": int,
+            "sequence_length_template": int,
+            "mean_qscore_template": float,
+        }
+        cols = set(dtype.keys())
 
-    def take_column(x):
-        return x in cols
+        def take_column(x):
+            return x in cols
 
-    seqsummary = pd.read_csv(
-        sequencing_summary_path, sep="\t",
-        dtype=dtype, usecols=take_column,
-        na_values={
-            "alignment_genome_start": "-",
-            "alignment_genome_end": "-"}
+        seqsummary = pd.read_csv(
+            sequencing_summary_path, sep="\t",
+            dtype=dtype, usecols=take_column,
+            na_values={
+                "alignment_genome_start": "-",
+                "alignment_genome_end": "-"}
         )
 
     logger.info('Calculating metrics.')

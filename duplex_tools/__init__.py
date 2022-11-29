@@ -3,14 +3,14 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import logging
 
 from duplex_tools import \
-    assess_split_on_adapter, filter_pairs, pairs_from_summary, \
+    assess_split_on_adapter, filter_pairs, pair, pairs_from_summary, \
     split_on_adapter  # noqa: F401
 
 modules = [
     "split_on_adapter", "assess_split_on_adapter",
-    "pairs_from_summary", "filter_pairs"]
+    "pairs_from_summary", "filter_pairs", "pair"]
 
-__version__ = '0.2.15'
+__version__ = '0.2.16'
 
 
 def main():

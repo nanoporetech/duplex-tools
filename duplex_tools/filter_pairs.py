@@ -35,7 +35,7 @@ def reverse_complement(seq):
 
 def filter_candidate_pairs_by_aligning(
         read_pairs: str,
-        fastq: str,
+        reads_path: str,
         bases_to_align: int = 250,
         align_threshold: float = 0.6,
         penalty_open: int = 4,
@@ -52,8 +52,8 @@ def filter_candidate_pairs_by_aligning(
 
     :param read_pairs: Path to file with two space-separated read-ids per row,
         the leftmost coming first in time.
-    :param fastq: The path to a fastq file with _all_ reads, both passing and
-        failing.
+    :param reads_path: The path to .fastq or .bam files with _all_ reads,
+        both passing and failing.
     :param bases_to_align: Number of bases to use from end of the first read,
         and from the start of second.
     :param align_threshold: Which alignment threshold to use for passing
@@ -93,13 +93,13 @@ def filter_candidate_pairs_by_aligning(
     read_pairs = Path(read_pairs)
     # Index and read pairs
     pairs = pd.read_csv(read_pairs, sep=" ", names=["first", "second"])
-    if fastq.endswith(".pkl"):  # for testing
+    if reads_path.endswith(".pkl"):  # for testing
         logger.info("Extracting read end data from pickle file.")
-        with open(fastq, 'rb') as fh:
+        with open(reads_path, 'rb') as fh:
             fastq_index = pickle.load(fh)
     else:
-        fastq_index = read_all_fastq(
-            fastq, pairs, bases_to_align, threads=threads)
+        fastq_index = read_all_sequences(
+            reads_path, pairs, bases_to_align, threads=threads)
         # dump to pickle
         pkl = Path(read_pairs.parent, "read_segments.pkl")
         with open(pkl, "wb") as fh:
@@ -123,30 +123,39 @@ def filter_candidate_pairs_by_aligning(
         index=False, header=False, sep=" ")
 
 
-def scrape_fastq(file, first, second, n_bases):
+def scrape_sequences(file, first, second, n_bases):
     """Compile data from a fastq file."""
     logger = duplex_tools.get_named_logger("ReadFastq")
     logger.debug("Extracting read ends from: {}".format(file))
     results = dict()
-    for read in pysam.FastxFile(file, persist=False):
-        if read.name in first:
-            results[(read.name, 0)] = str(read.sequence[-n_bases:])
-        if read.name in second:  # a read can be in both
-            results[(read.name, 1)] = reverse_complement(
-                str(read.sequence[:n_bases]))
+    if file.endswith('.bam'):
+        bamfile = pysam.AlignmentFile(file, check_sq=False)
+        for read in bamfile.fetch(until_eof=True):
+            if read.qname in first:
+                results[(read.qname, 0)] = str(read.query_sequence[-n_bases:])
+            if read.qname in second:
+                results[(read.qname, 1)] = reverse_complement(
+                    str(read.query_sequence[:n_bases]))
+    else:
+        for read in pysam.FastxFile(file, persist=False):
+            if read.name in first:
+                results[(read.name, 0)] = str(read.sequence[-n_bases:])
+            if read.name in second:  # a read can be in both
+                results[(read.name, 1)] = reverse_complement(
+                    str(read.sequence[:n_bases]))
     return results
 
 
-def read_all_fastq(fastq, pairs, n_bases, threads=None):
-    """Find an read all necessary data from fastq files."""
+def read_all_sequences(reads_directory, pairs, n_bases, threads=None):
+    """Find an read all necessary data from fastq or bam files."""
     logger = duplex_tools.get_named_logger("ReadFastq")
     first = set(pairs["first"])
     second = set(pairs["second"])
 
     def _get_files():
-        for ext in ("fastq", "fastq.gz", "fq", "fq.gz"):
+        for ext in ("fastq", "fastq.gz", "fq", "fq.gz", "bam"):
             files = glob.iglob(
-                "{}/**/*.{}".format(fastq, ext), recursive=True)
+                "{}/**/*.{}".format(reads_directory, ext), recursive=True)
             yield from files
 
     results = dict()
@@ -154,11 +163,11 @@ def read_all_fastq(fastq, pairs, n_bases, threads=None):
 
     executor = ProcessPoolExecutor(max_workers=threads)
     worker = functools.partial(
-        scrape_fastq, first=first, second=second, n_bases=n_bases)
+        scrape_sequences, first=first, second=second, n_bases=n_bases)
     for i, res in enumerate(executor.map(worker, files)):
         if i % 50 == 0:
             logger.info(
-                "Processed {}/{} input fastq files.".format(i, len(files)))
+                "Processed {}/{} input fastq/bam files.".format(i, len(files)))
         results.update(res)
     complete = 100 * len(results) / (2 * len(pairs))
     logger.info(
@@ -263,8 +272,8 @@ def argparser():
         "read_pairs",
         help="Candidate space-separated read ID pairs, time ordered.")
     parser.add_argument(
-        "fastq",
-        help="Directory to search of fastq(.gz) files.")
+        "reads_directory",
+        help="Directory to search of fastq(.gz) or .bam files.")
     parser.add_argument(
         "--bases_to_align", default=250, type=int,
         help="Number of bases from each read to attempt alignment.")
@@ -307,7 +316,7 @@ def argparser():
 def main(args):
     """Entry point."""
     filter_candidate_pairs_by_aligning(
-        args.read_pairs, args.fastq,
+        args.read_pairs, args.reads_directory,
         args.bases_to_align, args.align_threshold,
         args.penalty_open, args.penalty_extend,
         args.score_match, args.score_mismatch,
