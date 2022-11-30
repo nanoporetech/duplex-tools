@@ -128,7 +128,7 @@ def scrape_sequences(file, first, second, n_bases):
     logger = duplex_tools.get_named_logger("ReadFastq")
     logger.debug("Extracting read ends from: {}".format(file))
     results = dict()
-    if file.endswith('.bam'):
+    if file.endswith('.bam') or file.endswith('.sam'):
         bamfile = pysam.AlignmentFile(file, check_sq=False)
         for read in bamfile.fetch(until_eof=True):
             if read.qname in first:
@@ -153,10 +153,13 @@ def read_all_sequences(reads_directory, pairs, n_bases, threads=None):
     second = set(pairs["second"])
 
     def _get_files():
-        for ext in ("fastq", "fastq.gz", "fq", "fq.gz", "bam"):
-            files = glob.iglob(
-                "{}/**/*.{}".format(reads_directory, ext), recursive=True)
-            yield from files
+        if Path(reads_directory).is_dir():
+            for ext in ("fastq", "fastq.gz", "fq", "fq.gz", "bam", "sam"):
+                files = glob.iglob(
+                    "{}/**/*.{}".format(reads_directory, ext), recursive=True)
+                yield from files
+        elif Path(reads_directory).is_file():
+            yield reads_directory
 
     results = dict()
     files = list(_get_files())

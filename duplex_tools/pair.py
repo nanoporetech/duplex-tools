@@ -5,7 +5,6 @@ Convenience wrapper to both form pairs (pairs_from_summary) and filter them
 """
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
-from pathlib import Path
 
 import duplex_tools
 from duplex_tools.filter_pairs import filter_candidate_pairs_by_aligning
@@ -34,7 +33,6 @@ def pair_and_align(input_bam,
     :param min_length: see filter_pairs
     :param max_length: see filter_pairs
     """
-    reads_directory = str(Path(input_bam).parent)
     find_pairs(input_bam,
                outdir=output_dir,
                max_time_between_reads=max_time_between_reads,
@@ -43,7 +41,7 @@ def pair_and_align(input_bam,
                min_qscore=min_qscore,
                )
     filter_candidate_pairs_by_aligning(f'{output_dir}/pair_ids.txt',
-                                       reads_directory,
+                                       reads_path=input_bam,
                                        bases_to_align=bases_to_align,
                                        min_length=min_length,
                                        max_length=max_length,

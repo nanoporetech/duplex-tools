@@ -45,8 +45,8 @@ def test_pairs_from_bam():
 
 def test_pairs_are_same():
     # Given two methods
-    find_pairs(bamsummary, outdir='pairs_from_bam')
-    find_pairs(seqsummary, outdir='pairs_from_seqsum')
+    find_pairs(bamsummary, outdir='pairs_from_bam', max_seqlen_diff=0.65)
+    find_pairs(seqsummary, outdir='pairs_from_seqsum', max_seqlen_diff=0.65)
     
     
     # When comparing the pairs

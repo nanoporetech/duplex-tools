@@ -46,7 +46,7 @@ def find_pairs(
                             'start_time': read.get_tag('st'),
                             'channel': read.get_tag('ch'),
                             'mux': read.get_tag('mx'),
-                            'sequence_length_template': read.get_tag('ns'),
+                            'sequence_length_template': read.query_length,
                             'mean_qscore_template': read.get_tag('qs')
                             }
                            )

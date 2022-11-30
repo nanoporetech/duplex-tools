@@ -10,7 +10,7 @@ modules = [
     "split_on_adapter", "assess_split_on_adapter",
     "pairs_from_summary", "filter_pairs", "pair"]
 
-__version__ = '0.2.16'
+__version__ = '0.2.17'
 
 
 def main():
