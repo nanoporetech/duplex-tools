@@ -35,7 +35,7 @@ def find_pairs(
     logger.info(f'Duplex tools version: {duplex_tools.__version__}')
     outdir, output_pairs, output_intermediate = prepare_output_paths(
         outdir, prefix, prepend_seqsummary_stem, sequencing_summary_path)
-    if Path(sequencing_summary_path).suffix == '.bam':
+    if Path(sequencing_summary_path).suffix in {'.bam', '.sam'}:
         logger.info('Creating seqsummary from bam')
         bamfile = pysam.AlignmentFile(sequencing_summary_path,
                                       check_sq=False)  # Allow uBAM

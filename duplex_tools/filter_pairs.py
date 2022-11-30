@@ -2,7 +2,7 @@
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import functools
 import glob
 from pathlib import Path
@@ -161,7 +161,7 @@ def read_all_sequences(reads_directory, pairs, n_bases, threads=None):
     results = dict()
     files = list(_get_files())
 
-    executor = ProcessPoolExecutor(max_workers=threads)
+    executor = ThreadPoolExecutor(max_workers=threads)
     worker = functools.partial(
         scrape_sequences, first=first, second=second, n_bases=n_bases)
     for i, res in enumerate(executor.map(worker, files)):
