@@ -106,6 +106,8 @@ def find_pairs(
     logger.info(
         f"Found {ncandidate_pairs} pairs within {nstrands} reads. "
         f"({frac_pairs:.1f}% of reads are part of a pair).")
+    logger.info('Values above 100% are allowed since reads can be either '
+                'template or complement')
     logger.info(f'Writing files into {outdir} directory')
 
     # Write
@@ -306,19 +308,8 @@ def calculate_metrics_for_next_strand(
     return seqsummary
 
 
-def argparser():
-    """Create argument parser."""
-    parser = ArgumentParser(
-        "Create candidate pairs from sequencing summary.",
-        formatter_class=ArgumentDefaultsHelpFormatter,
-        parents=[duplex_tools._log_level()], add_help=False)
-
-    parser.add_argument(
-        "sequencing_summary",
-        help="Sequencing summary file.")
-    parser.add_argument(
-        "output",
-        help="Output directory.")
+def add_args(parser):
+    """Add arguments specific to this process."""
     parser.add_argument(
         "--prefix", default="pair",
         help="")
@@ -326,7 +317,7 @@ def argparser():
         "--prepend_seqsummary_stem", action="store_true",
         help="Add filename of the sequencing summary to output files.")
     parser.add_argument(
-        "--max_time_between_reads", type=int, default=20,
+        "--max_time_between_reads", type=int, default=200000,
         help=(
             "Maximum time (seconds) between reads for them to be "
             "deemed a pair."))
@@ -336,12 +327,12 @@ def argparser():
             "Maximum ratio (a - b) / a, where a and b are the "
             "sequence lengths of a putative pair."))
     parser.add_argument(
-        "--max_abs_seqlen_diff", type=int, default=1000,
+        "--max_abs_seqlen_diff", type=int, default=5000,
         help=(
             "Maximum sequence length difference between template and "
             "complement"))
     parser.add_argument(
-        "--min_qscore", type=float, default=7,
+        "--min_qscore", type=float, default=6,
         help=(
             "The minimum simplex qscore required from both template and "
             "complement"))
@@ -351,6 +342,22 @@ def argparser():
     parser.add_argument(
         "--match_barcodes", action="store_true",
         help="Require putative pair to contain same barcodes.")
+    return parser
+
+
+def argparser():
+    """Create argument parser."""
+    parser = ArgumentParser(
+        "Create candidate pairs from sequencing summary.",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        parents=[duplex_tools._log_level()], add_help=False)
+    parser.add_argument(
+        "sequencing_summary",
+        help="Sequencing summary file.")
+    parser.add_argument(
+        "output",
+        help="Output directory.")
+    parser = add_args(parser)
 
     return parser
 

@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug where an incorrect tag was used to get sequence lengths from .bam files (for dorado)
 ### Changed  
 - ProcessPoolExecutor -> ThreadPoolExecutor in filter_pairs for faster filtering
+- Reporting duplex rate in duplex_tools pair
 
 ## [v0.2.16]
 ### Added
 - Ability to use an unmapped bam (output from dorado) as input to pairs_from_summary
 - Ability to use an unmapped bam (output from dorado) as input to filter_pairs
-- Convenience script (`dorado pair unmapped.bam`) to call both pairs_from_summary and filter_pairs on a bam
-  - usage: dorado pair unmapped.bam
+- Convenience script (`duplex_tools pair unmapped.bam`) to call both pairs_from_summary and filter_pairs on a bam
+  - usage: duplex_tools pair unmapped.bam
 
 ## [v0.2.15]
 ### Fixed

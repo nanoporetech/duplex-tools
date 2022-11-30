@@ -265,18 +265,8 @@ def align_all_pairs(
     return alignment_scores_df
 
 
-def argparser():
-    """Create argument parser."""
-    parser = ArgumentParser(
-        "Filter candidate read pairs by basecall alignment.",
-        formatter_class=ArgumentDefaultsHelpFormatter,
-        parents=[duplex_tools._log_level()], add_help=False)
-    parser.add_argument(
-        "read_pairs",
-        help="Candidate space-separated read ID pairs, time ordered.")
-    parser.add_argument(
-        "reads_directory",
-        help="Directory to search of fastq(.gz) or .bam files.")
+def add_args(parser):
+    """Add arguments specific to this process."""
     parser.add_argument(
         "--bases_to_align", default=250, type=int,
         help="Number of bases from each read to attempt alignment.")
@@ -313,6 +303,22 @@ def argparser():
         "--no_end_penalties", action="store_true",
         help="Do no use end penalties for alignment. Allows truncated "
              "complement")
+    return parser
+
+
+def argparser():
+    """Create argument parser."""
+    parser = ArgumentParser(
+        "Filter candidate read pairs by basecall alignment.",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        parents=[duplex_tools._log_level()], add_help=False)
+    parser.add_argument(
+        "read_pairs",
+        help="Candidate space-separated read ID pairs, time ordered.")
+    parser.add_argument(
+        "reads_directory",
+        help="Directory to search of fastq(.gz) or .bam files.")
+    parser = add_args(parser)
     return parser
 
 
