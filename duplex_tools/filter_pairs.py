@@ -13,7 +13,7 @@ import parasail
 import pysam
 
 import duplex_tools
-
+from duplex_tools.utils import is_ubam
 
 comp = {
     'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'X': 'X', 'N': 'N',
@@ -130,12 +130,14 @@ def scrape_sequences(file, first, second, n_bases):
     results = dict()
     if file.endswith('.bam') or file.endswith('.sam'):
         bamfile = pysam.AlignmentFile(file, check_sq=False)
-        for read in bamfile.fetch(until_eof=True):
-            if read.qname in first:
-                results[(read.qname, 0)] = str(read.query_sequence[-n_bases:])
-            if read.qname in second:
-                results[(read.qname, 1)] = reverse_complement(
-                    str(read.query_sequence[:n_bases]))
+        if is_ubam(bamfile):
+            for read in bamfile.fetch(until_eof=True):
+                if read.qname in first:
+                    results[(read.qname, 0)] = \
+                        str(read.query_sequence[-n_bases:])
+                if read.qname in second:
+                    results[(read.qname, 1)] = reverse_complement(
+                        str(read.query_sequence[:n_bases]))
     else:
         for read in pysam.FastxFile(file, persist=False):
             if read.name in first:
