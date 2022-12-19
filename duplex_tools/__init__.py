@@ -4,13 +4,13 @@ import logging
 
 from duplex_tools import \
     assess_split_on_adapter, filter_pairs, pair, pairs_from_summary, \
-    split_on_adapter  # noqa: F401
+    split_on_adapter, split_pairs  # noqa: F401
 
 modules = [
     "split_on_adapter", "assess_split_on_adapter",
-    "pairs_from_summary", "filter_pairs", "pair"]
+    "pairs_from_summary", "filter_pairs", "pair", "split_pairs"]
 
-__version__ = '0.2.19'
+__version__ = '0.2.20'
 
 
 def main():

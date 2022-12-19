@@ -72,7 +72,8 @@ def pair_and_align(input_bam,
     logger.info(f'Initial reads: {nreads}')
     logger.info(f'Created pairs: {npairs}')
     logger.info(f'Paired reads:  {2 * npairs}')
-    logger.info(f'Approximate duplex rate: {2*100*npairs / nreads:.2f}%')
+    logger.info(f'Approximate duplex rate for {input_bam}: '
+                f'{2*100*npairs / nreads:.2f}%')
 
 
 def argparser():

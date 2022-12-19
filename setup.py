@@ -1,13 +1,9 @@
 import os
 import sys
-import shutil
+
 import re
-import shutil
-import platform
-from glob import glob
-from setuptools import setup, find_packages, Extension
-from setuptools import Distribution, Command
-from setuptools.command.install import install
+
+from setuptools import setup, find_packages
 import pkg_resources
 
 

@@ -4,7 +4,7 @@
 
 Duplex Tools contains a set of utilities for dealing with Duplex sequencing
 data. Tools are provided to identify and prepare duplex pairs for basecalling
-by Guppy and for recovering simplex basecalls from incorrectly concatenated
+by Dorado (recommended) and Guppy, and for recovering simplex basecalls from incorrectly concatenated
 pairs.
 
 ## Installation
@@ -19,7 +19,7 @@ by following:
 
 after which the code tools will be available using the `duplex_tools` command.
 
-## Usage
+## General Usage
 
 Duplex Tools is run simply with:
 
@@ -27,13 +27,68 @@ Duplex Tools is run simply with:
 
 The available sub-commands are:
 
-* [split_on_adapter](./fillet.md) - split incorrectly concantenate duplex pairs in to their component simplex reads (formerly `read_fillet`).
-* pairs_from_summary - identify candidate duplex pairs from sequencing summary output by Guppy.
-* filter_pairs - filter candidate pairs using basecall-to-basecall alignment.
-* pair - a wrapper to `pairs_from_summary` and then `filter_pairs`. Currently only compatible with dorado 
+### Duplex pairing
 
 
-**Preparing duplex reads for Guppy basecalling**
+#### Compatible with Dorado
+* `pair` - a wrapper to pair duplex reads, using `pairs_from_summary` and then `filter_pairs`.
+* `split_pairs` - a utility for recovering and pairing duplex reads (for cases where template/complement are contained within a single minknow read).
+
+#### Compatible with Guppy+Dorado
+* `pairs_from_summary` - identify candidate duplex pairs from sequencing summary output by Guppy or unmapped SAM/BAM by dorado.
+* `filter_pairs` - filter candidate pairs using basecall-to-basecall alignment.
+
+### Additional tools
+* [split_on_adapter](./fillet.md) - split the non-split duplex pairs in to their component simplex reads (formerly `read_fillet`). 
+  * This tool splits basecalled sequences into new sequences. For this reason, it's possible to perform _basespace_ duplex calling after using this method, but not regular stereo calling
+
+
+## Usage with Dorado (recommended)
+
+Currently, pairing and calling are separate processes to allow for workflow flexibility.
+
+For greatest duplex recovery, follow these steps:
+
+1) Simplex basecall with dorado (with `--emit-moves`)
+2) Pair reads
+3) Duplex-basecall reads
+
+
+### 1a) Simplex basecall with dorado
+This will create an (unmapped) .sam file which has a mapping between the signal and bases.
+`--emit-moves` allows for additional pairs to be found in step 2b.
+
+    $ dorado basecaller dna_r10.4.1_e8.2_400bps_fast@v4.0.0 pod5s/ --emit-moves > unmapped_reads_with_moves.sam
+
+### 2a) Find duplex pairs for Dorado stereo/basespace basecalling
+This will detect the majority of pairs and put them in the `pairs_from_bam` directory.
+
+    duplex_tools pair unmapped_reads_with_moves.bam pairs_from_bam/
+
+
+### 2b) Find additional duplex pairs in non-split reads (optional)
+
+The steps below can recover non-split pairs and allows duplex-calling of them.
+
+**Use the sam and a pod5 directory to create additional pairs**
+
+    $ duplex_tools split_pairs unmapped_reads_with_moves.sam pod5s/ pod5s_splitduplex/
+    $ cat pod5s_splitduplex/*_pair_ids.txt > split_duplex_pair_ids.txt
+
+### 3) Stereo basecall all the reads
+
+From the main pairing:
+
+    $ dorado duplex dna_r10.4.1_e8.2_400bps_sup@v4.0.0 pod5s/ --pairs pairs_from_bam/pair_ids_filtered.txt > duplex_orig.sam
+
+From the additional pairing (optional):
+
+    $ dorado duplex dna_r10.4.1_e8.2_400bps_sup@v4.0.0 pod5s_splitduplex/ --pairs split_duplex_pair_ids.txt > duplex_splitduplex.sam
+
+
+## Usage with Guppy
+
+**Preparing duplex reads for Guppy duplex basecalling**
 
 To prepare reads for duplex calling Duplex Tools provides two programs. The
 first parses the sequencing summary output by the Guppy basecaller (or the metadata in a .bam or .sam from dorado) in order
@@ -69,7 +124,7 @@ For example,
     guppy_basecaller_duplex \
         -i <MinKNOW directory> \
         -r -s duplex_calls \
-        -x 'cuda:0' -c q20-fixed-2.0-ft-10M.cfg \
+        -x 'cuda:0' -c dna_r10.4.1_e8.2_400bps_sup.cfg \
         --chunks_per_runner 416 \
         --duplex_pairing_mode from_pair_list \
         --duplex_pairing_file pair_ids_filtered.txt

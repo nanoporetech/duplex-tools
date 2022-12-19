@@ -5,7 +5,7 @@ stages:
     - build
     - deploy
 
-# Install a particular Python and set PYTHON envvar for Makefile 
+# Install a particular Python and set PYTHON envvar for Makefile
 .install-pyenv: &install-pyenv |
     git clone https://github.com/pyenv/pyenv.git ~/.pyenv
     export PYENV_ROOT="$HOME/.pyenv"
@@ -37,10 +37,6 @@ stages:
     script:
         - make flake8 test
 
-test-3.6.12:
-    variables:
-        PYENV_VERSION: 3.6.12
-    <<: *pytest
 
 test-3.7.9:
     variables:
@@ -51,6 +47,17 @@ test-3.8.7:
     variables:
         PYENV_VERSION: 3.8.7
     <<: *pytest
+
+test-3.9.16:
+    variables:
+        PYENV_VERSION: 3.9.16
+    <<: *pytest
+
+test-3.10.9:
+    variables:
+        PYENV_VERSION: 3.10.9
+    <<: *pytest
+
 
 ###
 # Source distribution
