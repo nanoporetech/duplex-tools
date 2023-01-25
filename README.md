@@ -63,7 +63,7 @@ This will create an (unmapped) .sam file which has a mapping between the signal 
 ### 2a) Find duplex pairs for Dorado stereo/basespace basecalling
 This will detect the majority of pairs and put them in the `pairs_from_bam` directory.
 
-    duplex_tools pair unmapped_reads_with_moves.bam pairs_from_bam/
+    duplex_tools pair --output_dir pairs_from_bam unmapped_reads_with_moves.bam
 
 
 ### 2b) Find additional duplex pairs in non-split reads (optional)
