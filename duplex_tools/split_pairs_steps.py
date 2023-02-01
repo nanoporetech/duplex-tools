@@ -6,7 +6,6 @@
 from collections import defaultdict
 from concurrent.futures import as_completed, ProcessPoolExecutor
 from functools import partial
-from itertools import chain
 from pathlib import Path
 import random
 import uuid
@@ -58,11 +57,7 @@ def get_split_points(
     with ProcessPoolExecutor(threads) as pool:
         with pysam.AlignmentFile(input_dorado_xam, check_sq=False) as f:
             it = f.fetch(until_eof=True)
-            chunk1 = [next(it) for _ in range(400)]
-            chunk2 = [next(it) for _ in range(600)]
-            chunk3 = [next(it) for _ in range(4000)]
-            iterator = chain([chunk1, chunk2, chunk3],
-                             chunked(it, chunk_size))
+            iterator = chunked(it, chunk_size)
 
             for idx, chunk in enumerate(iterator):
                 if finished:

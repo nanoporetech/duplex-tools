@@ -138,7 +138,7 @@ def process_file(
     with gzip.open(newfastx, mode='wt', compresslevel=1) as outfh:
 
         for read_id, seq, qual, comments in \
-                tqdm(Fastx(str(fastx)), leave=False):
+                tqdm(Fastx(str(fastx), comment=True), leave=False):
             result = find_mid_adaptor(
                 seq, targets,
                 print_alignment=print_alignment,

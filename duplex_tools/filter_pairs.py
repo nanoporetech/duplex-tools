@@ -149,7 +149,7 @@ def scrape_sequences(file, first, second, n_bases):
 
 
 def read_all_sequences(reads_directory, pairs, n_bases, threads=None):
-    """Find an read all necessary data from fastq or bam files."""
+    """Find and read all necessary data from fastq or bam files."""
     logger = duplex_tools.get_named_logger("ReadFastq")
     first = set(pairs["first"])
     second = set(pairs["second"])
