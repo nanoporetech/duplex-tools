@@ -61,9 +61,10 @@ setup(
                        'tests/data/summaries_for_pairing/dorado_unmapped.bam',
                        'tests/data/summaries_for_pairing/dorado_unmapped.bam.bai',
                        'tests/data/summaries_for_pairing/seqsummary.txt',
-                       
+
                        ]},
     zip_safe=True,
+    scripts=['duplex_tools/dorado_stereo.sh'],
     entry_points={
         'console_scripts': [
             '{0} = {0}:main'.format(__pkg_name__),
