@@ -92,11 +92,13 @@ if ! command -v duplex_tools pair > /dev/null; then
     exit 1;
 fi
 
-mkdir -p ${DUPLEX_DIR}
-mkdir -p ${SIMPLEX_UNMAPPED_MOVES_DIR}
-mkdir -p ${DUPLEX_DIR2}
-mkdir -p ${SIMPLEX_UNMAPPED_DIR}
-mkdir -p ${SPLITDUPLEX_DIR}
+if ! $dryflag; then
+    mkdir -p ${DUPLEX_DIR}
+    mkdir -p ${SIMPLEX_UNMAPPED_MOVES_DIR}
+    mkdir -p ${DUPLEX_DIR2}
+    mkdir -p ${SIMPLEX_UNMAPPED_DIR}
+    mkdir -p ${SPLITDUPLEX_DIR}
+fi
 
 # Stage 1 basecalling
 stage1_simplex="$DORADO basecaller $MODEL_LARGE $POD5 $DEVICE_STRING\
