@@ -1,5 +1,9 @@
 ![Oxford Nanopore Technologies logo](https://github.com/nanoporetech/medaka/raw/master/images/ONT_logo_590x106.png)
 
+> **Deprecation notice**
+> Please note that the functionality in this repository is superseded by integrated pairing in [Dorado](https://github.com/nanoporetech/dorado/tree/master/dorado).
+> This means it's no longer necessary to use pairing or dorado_stereo.sh in order to perform end-to-end duplex calling. 
+
 # Duplex Tools
 
 Duplex Tools contains a set of utilities for dealing with Duplex sequencing
@@ -58,7 +62,7 @@ For greatest duplex recovery, follow these steps:
 This will create an (unmapped) .sam file which has a mapping between the signal and bases.
 `--emit-moves` allows for additional pairs to be found in step 2b.
 
-    $ dorado basecaller dna_r10.4.1_e8.2_400bps_fast@v4.0.0 pod5s/ --emit-moves > unmapped_reads_with_moves.sam
+    $ dorado basecaller dna_r10.4.1_e8.2_400bps_fast@v4.0.0 pod5s/ --emit-moves > unmapped_reads_with_moves.bam
 
 ### 2a) Find duplex pairs for Dorado stereo/basespace basecalling
 This will detect the majority of pairs and put them in the `pairs_from_bam` directory.
